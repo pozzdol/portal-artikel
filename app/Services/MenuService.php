@@ -20,9 +20,12 @@ class MenuService
             return [];
         }
 
-        $roleIds = $user->roles->pluck('id');
+        // Peran AKTIF saja, bukan semua peran yang dipegang — supaya menu
+        // dan hak akses sepakat. Kalau memakai semua peran, item bisa tampil
+        // lalu menolak dengan 403 begitu diklik.
+        $role = $user->activeRole();
 
-        if ($roleIds->isEmpty()) {
+        if ($role === null) {
             return [];
         }
 
@@ -31,7 +34,7 @@ class MenuService
 
         $assigned = MenuItem::query()
             ->where('active', true)
-            ->whereHas('roles', fn ($q) => $q->whereIn('roles.id', $roleIds)
+            ->whereHas('roles', fn ($q) => $q->where('roles.id', $role->id)
                 ->where('menu_items_role.is_active', true))
             ->pluck('id');
 

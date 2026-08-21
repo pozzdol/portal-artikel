@@ -14,6 +14,9 @@ return new class extends Migration
             // Akun
             $table->string('name');
             $table->string('email')->unique();
+            // Untuk /penulis/{slug} di situs publik. Halamannya menyusul,
+            // kolomnya dibuat sekarang agar tidak perlu backfill nanti.
+            $table->string('slug')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

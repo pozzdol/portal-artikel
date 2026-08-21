@@ -51,7 +51,8 @@ class MenuAccessTest extends TestCase
 
         $this->assertContains('Peran & Hak Akses', $titles);
         $this->assertContains('Antrean Review', $titles);
-        $this->assertCount(10, $titles);
+        $this->assertContains('Profil Saya', $titles);
+        $this->assertCount(11, $titles);
     }
 
     public function test_penulis_tidak_melihat_menu_pengaturan(): void
@@ -59,6 +60,7 @@ class MenuAccessTest extends TestCase
         $titles = $this->titles(app(MenuService::class)->forUser($this->userWithRole('Penulis')));
 
         $this->assertContains('Artikel', $titles);
+        $this->assertContains('Profil Saya', $titles);
         $this->assertNotContains('Pengaturan', $titles);
         $this->assertNotContains('Antrean Review', $titles);
         $this->assertNotContains('Peran & Hak Akses', $titles);

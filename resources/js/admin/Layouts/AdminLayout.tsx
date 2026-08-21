@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
-import { LogOut, Moon, Sun } from 'lucide-react';
+import { Check, ChevronDown, LogOut, Moon, Sun } from 'lucide-react';
+import { Avatar } from '@/admin/Components/form';
 import { cn } from '@/lib/utils';
 
 export interface MenuNode {
@@ -13,7 +14,18 @@ export interface MenuNode {
 }
 
 interface SharedProps {
-    auth: { user: { name: string; byline: string; email: string; roles: string[] } | null };
+    auth: {
+        user: {
+            name: string;
+            byline: string;
+            email: string;
+            initials: string;
+            roles: Array<{ id: string; name: string }>;
+            activeRole: string | null;
+            canSwitchRole: boolean;
+            permissions: string[];
+        } | null;
+    };
     menu: MenuNode[];
     [key: string]: unknown;
 }
@@ -47,12 +59,7 @@ export default function AdminLayout({ title, description, children }: AdminLayou
                         <div className="flex items-center gap-2">
                             <ThemeToggle />
 
-                            <div className="ui-chip hidden items-baseline gap-2 px-3.5 py-2 sm:flex">
-                                <span className="text-sm font-medium">{auth.user?.byline}</span>
-                                <span className="text-xs text-[var(--ui-ink-2)]">
-                                    {auth.user?.roles.join(', ')}
-                                </span>
-                            </div>
+                            {auth.user ? <UserChip user={auth.user} /> : null}
 
                             <button
                                 type="button"
@@ -164,5 +171,99 @@ function ThemeToggle() {
         >
             {dark ? <Sun className="size-4" aria-hidden="true" /> : <Moon className="size-4" aria-hidden="true" />}
         </button>
+    );
+}
+
+type ChipUser = NonNullable<SharedProps['auth']['user']>;
+
+/* Identitas yang sedang dipakai. Pengalih peran menempel di sini karena ini
+   tempat orang mencari saat bertanya "saya sedang jadi siapa". */
+function UserChip({ user }: { user: ChipUser }) {
+    const [open, setOpen] = React.useState(false);
+    const ref = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        if (!open) return;
+
+        function onPointerDown(event: MouseEvent) {
+            if (!ref.current?.contains(event.target as Node)) setOpen(false);
+        }
+        function onKeyDown(event: KeyboardEvent) {
+            if (event.key === 'Escape') setOpen(false);
+        }
+
+        document.addEventListener('mousedown', onPointerDown);
+        document.addEventListener('keydown', onKeyDown);
+        return () => {
+            document.removeEventListener('mousedown', onPointerDown);
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, [open]);
+
+    function switchTo(roleId: string) {
+        setOpen(false);
+        router.put('/admin/peran-aktif', { role_id: roleId }, { preserveScroll: true });
+    }
+
+    const chipBody = (
+        <>
+            <Avatar initials={user.initials} id={user.name} size="sm" />
+            <span className="hidden text-sm font-medium sm:inline">{user.byline}</span>
+            <span className="hidden text-xs text-[var(--ui-ink-2)] sm:inline">{user.activeRole}</span>
+        </>
+    );
+
+    if (!user.canSwitchRole) {
+        return <div className="ui-chip flex items-center gap-2 px-2.5 py-1.5">{chipBody}</div>;
+    }
+
+    return (
+        <div className="relative" ref={ref}>
+            <button
+                type="button"
+                onClick={() => setOpen((v) => !v)}
+                aria-expanded={open}
+                aria-haspopup="menu"
+                className="ui-chip ui-focus flex items-center gap-2 px-2.5 py-1.5"
+            >
+                {chipBody}
+                <ChevronDown className="size-3.5 text-[var(--ui-ink-2)]" aria-hidden="true" />
+            </button>
+
+            {open ? (
+                <div
+                    role="menu"
+                    className="ui-tile absolute right-0 z-50 mt-2 w-60 p-1.5"
+                >
+                    <p className="px-2.5 py-1.5 text-[0.68rem] font-medium tracking-[0.06em] text-[var(--ui-ink-2)] uppercase">
+                        Bertindak sebagai
+                    </p>
+
+                    {user.roles.map((role) => (
+                        <button
+                            key={role.id}
+                            type="button"
+                            role="menuitem"
+                            onClick={() => switchTo(role.id)}
+                            className={cn(
+                                'ui-focus flex w-full items-center gap-2 rounded-[var(--ui-r-control)] px-2.5 py-2 text-left text-sm transition-colors',
+                                role.name === user.activeRole
+                                    ? 'font-medium'
+                                    : 'text-[var(--ui-ink-2)] hover:bg-[var(--ui-surface-2)] hover:text-[var(--ui-ink)]',
+                            )}
+                        >
+                            <span className="min-w-0 flex-1 truncate">{role.name}</span>
+                            {role.name === user.activeRole ? (
+                                <Check className="size-3.5 text-[var(--ui-accent-ink)]" aria-hidden="true" />
+                            ) : null}
+                        </button>
+                    ))}
+
+                    <p className="px-2.5 pt-1.5 pb-1 text-xs leading-relaxed text-[var(--ui-ink-2)]">
+                        Hak akses mengikuti peran yang dipilih.
+                    </p>
+                </div>
+            ) : null}
+        </div>
     );
 }

@@ -7,17 +7,17 @@ import { cn } from '@/lib/utils';
 
 type Step = 'email' | 'password';
 
-async function lookupEmail(email: string): Promise<boolean> {
+async function lookupIdentity(login: string): Promise<boolean> {
     const token = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 
-    const response = await fetch('/admin/login/check-email', {
+    const response = await fetch('/admin/login/check', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
             'X-CSRF-TOKEN': token,
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ login }),
     });
 
     if (response.status === 429) {
@@ -25,7 +25,7 @@ async function lookupEmail(email: string): Promise<boolean> {
     }
 
     if (!response.ok) {
-        throw new Error('Gagal memeriksa email. Coba lagi.');
+        throw new Error('Gagal memeriksa. Coba lagi.');
     }
 
     const data: { registered: boolean } = await response.json();
@@ -39,23 +39,27 @@ export default function Login() {
     const [emailError, setEmailError] = React.useState<string | null>(null);
     const passwordRef = React.useRef<HTMLInputElement>(null);
 
-    const form = useForm({ email: '', password: '', remember: false });
+    const form = useForm({ login: '', password: '', remember: false });
 
     async function submitEmail(event: React.FormEvent) {
         event.preventDefault();
         setEmailError(null);
 
-        if (!/^\S+@\S+\.\S+$/.test(form.data.email)) {
-            setEmailError('Masukkan alamat email yang valid.');
+        const value = form.data.login.trim();
+        const looksLikeEmail = value.includes('@');
+        const digits = value.replace(/\D+/g, '');
+
+        if (looksLikeEmail ? !/^\S+@\S+\.\S+$/.test(value) : digits.length < 8) {
+            setEmailError('Masukkan alamat email atau nomor HP yang valid.');
             return;
         }
 
         setChecking(true);
         try {
-            const registered = await lookupEmail(form.data.email);
+            const registered = await lookupIdentity(form.data.login);
 
             if (!registered) {
-                setEmailError('Email ini tidak terdaftar sebagai admin aktif.');
+                setEmailError('Data ini tidak cocok dengan akun aktif mana pun.');
                 return;
             }
 
@@ -100,16 +104,15 @@ export default function Login() {
             {step === 'email' ? (
                 <form onSubmit={submitEmail} className="ui-step mt-6 flex flex-col gap-5" noValidate>
                     <Field
-                        label="Alamat email"
-                        type="email"
-                        name="email"
+                        label="Email atau nomor HP"
+                        name="login"
                         autoComplete="username"
-                        placeholder="nama@almaidah.id"
+                        placeholder="nama@almaidah.id atau 8211..."
                         autoFocus
-                        value={form.data.email}
-                        onChange={(e) => form.setData('email', e.target.value)}
+                        value={form.data.login}
+                        onChange={(e) => form.setData('login', e.target.value)}
                         error={emailError ?? undefined}
-                        hint="Kami cek dulu apakah email ini terdaftar."
+                        hint="Anggota alumni memakai nomor HP."
                         disabled={checking}
                     />
 
@@ -119,7 +122,7 @@ export default function Login() {
                 </form>
             ) : (
                 <form onSubmit={submitPassword} className="ui-step mt-6 flex flex-col gap-5" noValidate>
-                    <IdentityChip email={form.data.email} onEdit={backToEmail} />
+                    <IdentityChip email={form.data.login} onEdit={backToEmail} />
 
                     <Field
                         ref={passwordRef}
@@ -149,7 +152,7 @@ export default function Login() {
 
 function StepTrack({ step }: { step: Step }) {
     const steps: Array<{ id: Step; label: string }> = [
-        { id: 'email', label: 'Email' },
+        { id: 'email', label: 'Identitas' },
         { id: 'password', label: 'Kata sandi' },
     ];
     const activeIndex = steps.findIndex((s) => s.id === step);

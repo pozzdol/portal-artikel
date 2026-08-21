@@ -87,6 +87,18 @@ Hanya dua primitif: transisi antar tahap (`.ui-step`) dan tekan tombol.
 `prefers-reduced-motion: reduce` mematikan keduanya.
 
 ## Komponen
+Variabel semantik shadcn (`--background`, `--popover`, `--accent`, `--border`,
+`--ring`, `--radius`, …) dipetakan ke token `--ui-*` di blok `:root`
+[`app.css`](resources/css/app.css). Karena itu **setiap komponen shadcn yang
+ditambahkan berikutnya otomatis mengikuti sistem** — jangan menempel kelas
+warna di tiap pemakaian, dan jangan mengubah pemetaan itu per halaman.
+
+Tidak ada `<select>` bawaan di panel. Pakai `SelectField` (berlabel) atau
+`SelectControl` (tanpa label) dari `form.tsx`; keduanya membungkus shadcn
+Select. Radix menolak `value=""`, jadi opsi "semua"/"kosong" diwakili
+sentinel `SELECT_EMPTY` — dan sentinel itu hanya dipasang bila `emptyLabel`
+memang diberikan, kalau tidak placeholder-nya tidak muncul.
+
 Primitif dari shadcn/ui (`resources/js/components/ui/`). Skin ada di
 [`resources/js/admin/Components/form.tsx`](resources/js/admin/Components/form.tsx) —
 `Field`, `SubmitButton`, `TextLink`. Perilaku dan a11y tetap milik shadcn;

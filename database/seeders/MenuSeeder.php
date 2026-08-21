@@ -19,7 +19,7 @@ class MenuSeeder extends Seeder
                 'title' => 'Dashboard',
                 'icon' => 'layout-dashboard',
                 'route_name' => 'admin.dashboard',
-                'roles' => ['Super Admin', 'Pemimpin Redaksi', 'Redaktur', 'Penulis', 'Kontributor'],
+                'roles' => ['Super Admin', 'Pemimpin Redaksi', 'Redaktur', 'Penulis', 'Kontributor', 'Anggota'],
             ],
             [
                 'title' => 'Redaksi',
@@ -76,6 +76,14 @@ class MenuSeeder extends Seeder
                         'roles' => ['Super Admin'],
                     ],
                 ],
+            ],
+            // Level atas, bukan di bawah Pengaturan: kalau ditaruh di sana,
+            // Penulis melihat header "Pengaturan" hanya untuk menampung satu item.
+            [
+                'title' => 'Profil Saya',
+                'icon' => 'user-circle',
+                'route_name' => 'admin.profile.edit',
+                'roles' => ['Super Admin', 'Pemimpin Redaksi', 'Redaktur', 'Penulis', 'Kontributor', 'Anggota'],
             ],
         ];
 

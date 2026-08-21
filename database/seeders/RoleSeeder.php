@@ -17,6 +17,7 @@ class RoleSeeder extends Seeder
     public static function definitions(): array
     {
         $tulisSendiri = [
+            'view dashboard',
             'view article', 'create article', 'store article',
             'edit article', 'update article', 'submit article',
             'view media', 'upload media',
@@ -33,12 +34,13 @@ class RoleSeeder extends Seeder
                 'order' => 2,
                 'description' => 'Menerbitkan, menjadwalkan, mengarsipkan, dan mengelola pengguna.',
                 'permissions' => [
+                    'view dashboard',
                     'view article', 'view article-all', 'create article', 'store article',
                     'edit article', 'update article', 'delete article', 'submit article',
                     'review article', 'publish article', 'schedule article', 'archive article',
                     'view category', 'create category', 'update category', 'delete category',
                     'view media', 'upload media', 'delete media',
-                    'view user', 'create user', 'update user', 'delete user',
+                    'view user', 'update user', 'invite user', 'deactivate user',
                     'view role',
                 ],
             ],
@@ -46,6 +48,7 @@ class RoleSeeder extends Seeder
                 'order' => 3,
                 'description' => 'Mereview draf: menerima atau mengembalikan, serta menyunting semua artikel.',
                 'permissions' => [
+                    'view dashboard',
                     'view article', 'view article-all', 'create article', 'store article',
                     'edit article', 'update article', 'submit article', 'review article',
                     'view category',
@@ -61,6 +64,14 @@ class RoleSeeder extends Seeder
                 'order' => 5,
                 'description' => 'Menulis dan mengajukan draf sendiri, tanpa hak menghapus.',
                 'permissions' => $tulisSendiri,
+            ],
+            // Alumni yang punya akun tapi tidak menulis. Sengaja dimulai dari
+            // hampir nol — hak tambahannya diberikan lewat modul Hak Akses,
+            // bukan dengan menambah daftar di sini.
+            'Anggota' => [
+                'order' => 6,
+                'description' => 'Alumni terdaftar yang tidak menulis. Hanya membuka panel; hak lain diatur lewat Hak Akses.',
+                'permissions' => ['view dashboard'],
             ],
         ];
     }

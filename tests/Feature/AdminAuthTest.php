@@ -40,11 +40,11 @@ class AdminAuthTest extends TestCase
     {
         $this->admin();
 
-        $this->postJson('/admin/login/check-email', ['email' => 'uji@almaidah.id'])
+        $this->postJson('/admin/login/check', ['login' => 'uji@almaidah.id'])
             ->assertOk()
             ->assertJson(['registered' => true]);
 
-        $this->postJson('/admin/login/check-email', ['email' => 'bukan@contoh.com'])
+        $this->postJson('/admin/login/check', ['login' => 'bukan@contoh.com'])
             ->assertOk()
             ->assertJson(['registered' => false]);
     }
@@ -54,10 +54,10 @@ class AdminAuthTest extends TestCase
         $user = $this->admin();
         $user->update(['is_active' => false]);
 
-        $this->postJson('/admin/login/check-email', ['email' => $user->email])
+        $this->postJson('/admin/login/check', ['login' => $user->email])
             ->assertJson(['registered' => false]);
 
-        $this->post('/admin/login', ['email' => $user->email, 'password' => 'rahasia-sekali'])
+        $this->post('/admin/login', ['login' => $user->email, 'password' => 'rahasia-sekali'])
             ->assertSessionHasErrors('password');
 
         $this->assertGuest();
@@ -67,7 +67,7 @@ class AdminAuthTest extends TestCase
     {
         $user = $this->admin();
 
-        $this->post('/admin/login', ['email' => $user->email, 'password' => 'salah'])
+        $this->post('/admin/login', ['login' => $user->email, 'password' => 'salah'])
             ->assertSessionHasErrors('password');
 
         $this->assertGuest();
@@ -77,7 +77,7 @@ class AdminAuthTest extends TestCase
     {
         $user = $this->admin();
 
-        $this->post('/admin/login', ['email' => $user->email, 'password' => 'rahasia-sekali'])
+        $this->post('/admin/login', ['login' => $user->email, 'password' => 'rahasia-sekali'])
             ->assertRedirect('/admin');
 
         $this->assertAuthenticatedAs($user);

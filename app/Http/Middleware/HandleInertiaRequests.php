@@ -30,9 +30,17 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'byline' => $user->byline,
                     'email' => $user->email,
-                    'roles' => $user->getRoleNames(),
-                    // Dikirim agar UI bisa menyembunyikan aksi yang tidak
-                    // diizinkan. Otorisasi sebenarnya tetap di server.
+                    'initials' => $user->initials,
+                    // Semua peran yang dipegang, untuk pengalih peran.
+                    'roles' => $user->roles->map(fn ($role) => [
+                        'id' => $role->id,
+                        'name' => $role->name,
+                    ])->values(),
+                    'activeRole' => $user->activeRole()?->name,
+                    'canSwitchRole' => $user->canSwitchRole(),
+                    // Sudah dipersempit ke peran aktif oleh override di model
+                    // User. Dikirim agar UI bisa menyembunyikan aksi yang tidak
+                    // diizinkan; otorisasi sebenarnya tetap di server.
                     'permissions' => $user->getAllPermissions()->pluck('name'),
                 ] : null,
             ],

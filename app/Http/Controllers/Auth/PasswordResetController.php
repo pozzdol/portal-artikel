@@ -53,7 +53,19 @@ class PasswordResetController extends Controller
                 $user->forceFill([
                     'password' => Hash::make($request->string('password')),
                     'remember_token' => Str::random(60),
-                ])->save();
+                ]);
+
+                // Undangan diterima: akun yang belum pernah menetapkan sandi
+                // menjadi aktif sekarang. Reset sandi biasa tidak lewat sini,
+                // jadi akun yang sengaja dinonaktifkan tetap nonaktif.
+                if ($user->email_verified_at === null) {
+                    $user->forceFill([
+                        'email_verified_at' => now(),
+                        'is_active' => true,
+                    ]);
+                }
+
+                $user->save();
             }
         );
 

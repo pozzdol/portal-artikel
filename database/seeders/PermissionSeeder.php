@@ -16,6 +16,9 @@ class PermissionSeeder extends Seeder
     public static function definitions(): array
     {
         return [
+            'Panel' => [
+                'view dashboard' => 'Membuka panel dan melihat ringkasan',
+            ],
             'Artikel' => [
                 'view article' => 'Melihat daftar dan detail artikel',
                 'create article' => 'Membuka form artikel baru',
@@ -43,9 +46,9 @@ class PermissionSeeder extends Seeder
             ],
             'Pengguna' => [
                 'view user' => 'Melihat daftar pengguna',
-                'create user' => 'Menambah pengguna',
                 'update user' => 'Menyunting pengguna',
-                'delete user' => 'Menonaktifkan atau menghapus pengguna',
+                'invite user' => 'Mengundang pengguna baru lewat email',
+                'deactivate user' => 'Menonaktifkan dan mengaktifkan kembali pengguna',
             ],
             'Hak Akses' => [
                 'view role' => 'Melihat daftar peran',

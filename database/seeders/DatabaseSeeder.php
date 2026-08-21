@@ -4,13 +4,10 @@ namespace Database\Seeders;
 
 use App\Models\Role;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     public function run(): void
     {
         $this->call([
@@ -36,5 +33,6 @@ class DatabaseSeeder extends Seeder
         );
 
         $admin->syncRoles([$superAdmin]);
+        $admin->forceFill(['default_role_id' => $superAdmin->id])->save();
     }
 }
