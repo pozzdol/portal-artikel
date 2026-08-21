@@ -37,9 +37,9 @@
                 </h2>
 
                 <nav class="flex flex-col items-start gap-2.5 font-sans text-sm font-medium">
-                    @foreach (['kajian' => 'Kajian', 'berita' => 'Berita', 'tokoh' => 'Alumni', 'kegiatan' => 'Yayasan', 'opini' => 'Opini', 'agenda' => 'Agenda'] as $anchor => $label)
-                        <a href="#{{ $anchor }}"
-                            class="text-[#666666] dark:text-[#999999] hover:text-accent-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-gold transition-colors">{{ $label }}</a>
+                    @foreach ($navCategories as $category)
+                        <a href="#{{ $category->slug }}"
+                            class="text-[#666666] dark:text-[#999999] hover:text-accent-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-gold transition-colors">{{ $category->name }}</a>
                     @endforeach
                 </nav>
             </div>

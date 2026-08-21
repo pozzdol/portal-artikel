@@ -21,13 +21,10 @@
             class="flex flex-wrap items-center gap-[22px] font-sans font-medium text-[14.5px] text-[#111111] dark:text-white">
             <a href="/"
                 class="border-b-2 border-accent-gold pb-1 font-semibold text-[#111111] dark:text-white">Beranda</a>
-            <a href="#kajian" class="hover:text-accent-gold transition-colors">Kajian</a>
-            <a href="#berita" class="hover:text-accent-gold transition-colors">Berita</a>
-            <a href="#tokoh" class="hover:text-accent-gold transition-colors">Alumni</a>
-            <a href="#kegiatan" class="hover:text-accent-gold transition-colors">Yayasan</a>
-            <a href="#opini" class="hover:text-accent-gold transition-colors">Opini</a>
-            <a href="#agenda" class="hover:text-accent-gold transition-colors">Agenda</a>
-            <a href="#video" class="hover:text-accent-gold transition-colors">Video</a>
+            @foreach ($navCategories as $category)
+                <a href="#{{ $category->slug }}"
+                    class="hover:text-accent-gold transition-colors">{{ $category->name }}</a>
+            @endforeach
         </nav>
 
         <!-- Right Action Controls (Tanggal, Search, Dark Mode) -->
