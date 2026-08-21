@@ -1,0 +1,22 @@
+[
+  {
+    "date": "2026-08-21",
+    "scope": "multi-page (panel admin)",
+    "macrostructure": "Bento Grid",
+    "theme": "custom \"Kertas\"",
+    "theme_axes": "light paper / geometric-sans display / warm gold accent",
+    "vibe": "soft minimalist, kertas hangat, kartu putih",
+    "enrichment": "none (tipografi + permukaan)",
+    "brief": "Redesign panel admin ALMAIDAH dari neumorphism ke Bento Grid + soft minimalist; tanpa serif"
+  },
+  {
+    "date": "2026-08-20",
+    "scope": "component",
+    "macrostructure": "n/a (auth screens — page apparatus not applicable)",
+    "theme": "custom \"Putty\"",
+    "theme_axes": "light-band putty + dark-band charcoal / roman-serif display / warm gold 88°",
+    "vibe": "soft extruded putty, brand gold, quiet",
+    "enrichment": "none (typography + surface only)",
+    "brief": "ALMAIDAH admin — two-step login (email then password) + forgot password, neumorphic over shadcn/ui"
+  }
+]
