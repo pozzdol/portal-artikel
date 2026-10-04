@@ -1,0 +1,39 @@
+version: "2"
+sql:
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries
+    gen:
+      go:
+        package: dbgen
+        out: internal/dbgen
+        sql_package: pgx/v5
+        emit_json_tags: true
+        json_tags_case_style: snake
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        overrides:
+          - db_type: timestamptz
+            go_type: time.Time
+          - db_type: timestamptz
+            nullable: true
+            go_type:
+              type: time.Time
+              pointer: true
+          - db_type: date
+            go_type: time.Time
+          - db_type: date
+            nullable: true
+            go_type:
+              type: time.Time
+              pointer: true
+          - db_type: citext
+            go_type: string
+          - db_type: citext
+            nullable: true
+            go_type:
+              type: string
+              pointer: true
+          # pgx >= v5.8 decodes tsvector in binary format; it no longer scans into string.
+          - db_type: tsvector
+            go_type: github.com/jackc/pgx/v5/pgtype.TSVector

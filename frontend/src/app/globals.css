@@ -1,0 +1,586 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --paper: #ffffff;
+  --ink: #111111;
+  --gold: #c9a227;
+  --gold-strong: #8a6d12;
+  --muted: #f5f5f5;
+  --line: #e8e8e8;
+  /* Internal color variables (private names, deliberately not "--text-*": that
+     namespace is reserved below for the Tailwind v4 font-size scale). */
+  --c-body: #3a3a3a;
+  --c-soft: #555555;
+  --c-meta: #666666;
+  --c-faint: #888888;
+  --c-ghost: #999999;
+
+  /* Ink surfaces (announcement bar, breaking ticker, quote, newsletter): always
+     dark, in both light and dark theme, so never reuse --ink/--paper for these. */
+  --ink-surface: #111111;
+  --on-ink: #ffffff;
+  --on-ink-muted: #b8b8b8;
+  --ink-input-bg: #1a1a1a;
+  --ink-input-line: #333333;
+  --on-gold: #111111;
+  /* Constant light plate for the logo box in dark mode (never redefined
+     under .dark, so it never flips): keeps a dark-glyph logo legible on a
+     dark header/footer background. */
+  --plate: #ffffff;
+  --mark: #f3e8bd;
+  --danger: #b42318;
+  --success: #1f7a3a;
+
+  /* shadcn/ui theme variables: references to our tokens, so they flip with
+     .dark automatically (never redefine them under .dark). --muted is our own
+     token and doubles as shadcn's muted surface. */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--paper);
+  --card-foreground: var(--ink);
+  --popover: var(--paper);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--paper);
+  --secondary: var(--muted);
+  --secondary-foreground: var(--ink);
+  --accent: var(--muted);
+  --accent-foreground: var(--ink);
+  --muted-foreground: var(--c-meta);
+  --destructive: var(--danger);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--gold);
+  --chart-1: var(--gold);
+  --chart-2: var(--ink);
+  --chart-3: var(--c-faint);
+  --chart-4: var(--line);
+  --chart-5: var(--gold-strong);
+  --sidebar: var(--paper);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--gold);
+  --sidebar-primary-foreground: var(--on-gold);
+  --sidebar-accent: var(--muted);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--gold);
+  /* Square corners everywhere (literal rounded-[..]/rounded-full are the
+     deliberate exceptions). */
+  --radius: 0px;
+}
+
+.dark {
+  --paper: #0e0e0e;
+  --muted: #181818;
+  --line: #2a2a2a;
+  --ink: #f2f2f2;
+  --c-body: #d6d6d6;
+  --c-soft: #b5b5b5;
+  --c-meta: #9a9a9a;
+  --c-faint: #7a7a7a;
+  --c-ghost: #6a6a6a;
+  --gold: #d4b04a;
+  --gold-strong: #e2c25e;
+
+  --ink-surface: #000000;
+  --mark: #4a3d12;
+  --danger: #e5484d;
+  --success: #4cc07a;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-gold: var(--gold);
+  --color-gold-strong: var(--gold-strong);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-body: var(--c-body);
+  --color-soft: var(--c-soft);
+  --color-meta: var(--c-meta);
+  --color-faint: var(--c-faint);
+  --color-ghost: var(--c-ghost);
+  --color-ink-surface: var(--ink-surface);
+  --color-on-ink: var(--on-ink);
+  --color-on-ink-muted: var(--on-ink-muted);
+  --color-ink-input: var(--ink-input-bg);
+  --color-ink-input-line: var(--ink-input-line);
+  --color-on-gold: var(--on-gold);
+  --color-plate: var(--plate);
+  --color-mark: var(--mark);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+
+  /* shadcn/ui color utilities (--color-muted above serves both). */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --font-serif: var(--font-cormorant), Georgia, serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-heading: var(--font-serif);
+  --container-site: 1320px;
+
+  /* Editorial type scale (px sizes, unitless line-heights). */
+  --text-display: 52px;
+  --text-display--line-height: 1.12;
+  --text-h2: 34px;
+  --text-h2--line-height: 1.2;
+  --text-h2-sm: 28px;
+  --text-h2-sm--line-height: 1.25;
+  --text-h3: 22px;
+  --text-h3--line-height: 1.3;
+  --text-h3-sm: 18px;
+  --text-h3-sm--line-height: 1.35;
+  --text-quote: 38px;
+  --text-quote--line-height: 1.5;
+  --text-brand: 22px;
+  --text-brand--line-height: 1.1;
+  --text-lead: 17px;
+  --text-lead--line-height: 1.7;
+  --text-copy: 15px;
+  --text-copy--line-height: 1.7;
+  --text-copy-sm: 14px;
+  --text-copy-sm--line-height: 1.6;
+  --text-nav: 14.5px;
+  --text-nav--line-height: 1;
+  --text-caption: 13.5px;
+  --text-caption--line-height: 1.4;
+  --text-caption-sm: 12.5px;
+  --text-caption-sm--line-height: 1.4;
+  --text-caption-xs: 11.5px;
+  --text-caption-xs--line-height: 1.4;
+  --text-eyebrow: 12px;
+  --text-eyebrow--line-height: 1;
+  --text-eyebrow-sm: 11px;
+  --text-eyebrow-sm--line-height: 1;
+  --text-eyebrow-xs: 10.5px;
+  --text-eyebrow-xs--line-height: 1;
+}
+
+/* Ink-background sections (breaking ticker, quote, newsletter, and any
+   section an admin sets to "ink") already have AA contrast with the base
+   --gold against --ink-surface (~8:1 in light theme). Only outside them
+   does small/bold gold text need the darker --gold-strong (Issue 12: WCAG
+   AA color-contrast). Scoped to the `.text-on-ink` ancestor SectionShell
+   already applies to ink sections, so this never touches light/muted
+   backgrounds. */
+.text-on-ink .text-gold-strong {
+  color: var(--gold);
+}
+
+@layer base {
+  /* shadcn base rule, enabled after W1-G's public-site border audit: every
+     `border`/`border-*` utility on the public site already carries an
+     explicit color (border-line/border-ink/border-gold/border-transparent),
+     so this only supplies a default for shadcn internals that omit one
+     (harmless: none of those are reachable from the public site). */
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+  }
+
+  ::selection {
+    background: var(--gold);
+    color: var(--on-gold);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 100;
+    background: var(--gold);
+    color: var(--on-gold);
+    padding: 12px 20px;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .skip-link:focus {
+    left: 16px;
+    top: 16px;
+  }
+
+  .prose-almaidah {
+    max-width: 720px;
+    font-family: var(--font-sans);
+    font-size: 17px;
+    line-height: 1.8;
+    color: var(--c-body);
+  }
+
+  .prose-almaidah h2 {
+    font-family: var(--font-serif);
+    font-size: 30px;
+    line-height: 1.25;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 1.6em 0 0.6em;
+  }
+
+  .prose-almaidah h3 {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    line-height: 1.3;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 1.5em 0 0.5em;
+  }
+
+  .prose-almaidah p {
+    margin: 0 0 1.4em;
+  }
+
+  .prose-almaidah ul,
+  .prose-almaidah ol {
+    margin: 0 0 1.4em;
+    padding-left: 1.4em;
+  }
+
+  /* Tailwind preflight removes list markers; restore them for article content. */
+  .prose-almaidah ul {
+    list-style: disc;
+  }
+
+  .prose-almaidah ol {
+    list-style: decimal;
+  }
+
+  .prose-almaidah li::marker {
+    color: var(--gold);
+  }
+
+  .prose-almaidah li {
+    margin-bottom: 0.4em;
+  }
+
+  .prose-almaidah blockquote {
+    margin: 1.6em 0;
+    padding-left: 20px;
+    border-left: 3px solid var(--gold);
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 19px;
+    line-height: 1.6;
+    color: var(--c-soft);
+  }
+
+  .prose-almaidah img {
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--line);
+  }
+
+  .prose-almaidah a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .prose-almaidah figure {
+    margin: 1.8em 0;
+  }
+
+  .prose-almaidah figure figcaption {
+    font-size: 13.5px;
+    line-height: 1.4;
+    color: var(--c-meta);
+    margin-top: 0.6em;
+  }
+
+  .prose-almaidah iframe {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--line);
+  }
+
+  mark {
+    background: var(--mark);
+    color: inherit;
+  }
+
+  @keyframes marquee-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  .marquee {
+    animation: marquee-scroll var(--marquee-duration, 26s) linear infinite;
+  }
+
+  .marquee:hover,
+  .marquee:focus-within {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee {
+      animation: none;
+    }
+  }
+
+  @keyframes quote-fade {
+    0% {
+      opacity: 0;
+    }
+    8% {
+      opacity: 1;
+    }
+    92% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  .quote-fade {
+    animation: quote-fade var(--quote-fade-duration, 6s) ease-in-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .quote-fade {
+      animation: none;
+    }
+  }
+}
+
+/* editor ------------------------------------------------------------------
+   Admin rich-text editor (src/components/admin/editor). Only .editor-* hooks
+   plus ProseMirror internals scoped under them; the writing area itself is
+   .prose-almaidah, so the draft reads exactly like the published article. */
+@layer components {
+  .editor-root {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    transition: border-color 120ms ease;
+  }
+
+  .editor-root[data-focused] {
+    border-color: var(--ink);
+  }
+
+  .editor-root[data-invalid] {
+    border-color: var(--danger);
+  }
+
+  .editor-root[data-disabled] {
+    opacity: 0.7;
+  }
+
+  .editor-toolbar {
+    position: sticky;
+    top: var(--editor-sticky-top, 0px);
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    min-height: 45px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+    /* The one accent: a gold rule that appears while writing. */
+    box-shadow: inset 0 -2px 0 transparent;
+    transition: box-shadow 160ms ease;
+  }
+
+  .editor-root[data-focused] .editor-toolbar {
+    box-shadow: inset 0 -2px 0 var(--gold);
+  }
+
+  .editor-root-inline .editor-toolbar {
+    position: static;
+    min-height: 37px;
+    padding: 2px 4px;
+  }
+
+  .editor-toolbar-divider {
+    height: 20px;
+    margin: 0 6px;
+  }
+
+  .editor-toolbar-end {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+  }
+
+  .editor-block-trigger {
+    min-width: 108px;
+    justify-content: space-between;
+  }
+
+  .editor-content {
+    flex: 1;
+  }
+
+  .editor-content .ProseMirror {
+    min-height: var(--editor-min-h, 360px);
+    margin: 0 auto;
+    padding: 32px clamp(16px, 4vw, 40px) 40px;
+    outline: none;
+    overflow-wrap: break-word;
+  }
+
+  .editor-content .ProseMirror > :first-child {
+    margin-top: 0;
+  }
+
+  .editor-content .ProseMirror.editor-inline {
+    max-width: none;
+    min-height: var(--editor-min-h, 88px);
+    padding: 12px 14px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .editor-content .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    color: var(--c-ghost);
+    pointer-events: none;
+  }
+
+  .editor-content .ProseMirror hr {
+    margin: 2.2em auto;
+    border: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .editor-content .ProseMirror-selectednode:not(.editor-node) {
+    outline: 2px solid var(--gold);
+    outline-offset: 4px;
+  }
+
+  .editor-node {
+    margin: 1.8em 0;
+  }
+
+  .editor-node-media {
+    position: relative;
+    cursor: grab;
+  }
+
+  .editor-node[data-selected] .editor-node-media {
+    outline: 2px solid var(--gold);
+    outline-offset: 3px;
+  }
+
+  .editor-node-embed iframe {
+    display: block;
+    pointer-events: none;
+  }
+
+  .editor-node[data-selected] .editor-node-embed iframe {
+    pointer-events: auto;
+  }
+
+  .editor-node-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+
+  .editor-node:hover .editor-node-remove,
+  .editor-node[data-selected] .editor-node-remove,
+  .editor-node-remove:focus-visible {
+    opacity: 1;
+  }
+
+  .editor-node-fields {
+    display: grid;
+    gap: 6px;
+    margin-top: 10px;
+    font-family: var(--font-sans);
+    line-height: 1.4;
+  }
+
+  .editor-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 6px 12px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--c-meta);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .editor-footer [data-over] {
+    color: var(--danger);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .editor-root,
+    .editor-toolbar,
+    .editor-node-remove {
+      transition: none;
+    }
+  }
+}
+/* /editor */

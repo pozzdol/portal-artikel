@@ -1,0 +1,39 @@
+# ALMAIDAH reverse proxy (Caddy). Copy to /etc/caddy/Caddyfile (or import it
+# from there), then `systemctl reload caddy`. Caddy obtains and renews the TLS
+# certificate automatically (Let's Encrypt) — no certbot needed.
+#
+# Replace example.com with the real production domain.
+
+example.com {
+	encode gzip
+
+	# Uploaded covers/media: same limit as the app's own UPLOAD_MAX_MB, plus
+	# headroom for multipart overhead.
+	request_body {
+		max_size 6MB
+	}
+
+	# Next.js build output is content-hashed and safe to cache forever.
+	@nextStatic path /_next/static/*
+	header @nextStatic Cache-Control "public, max-age=31536000, immutable"
+
+	# Optional alternative: serve uploaded files directly from disk instead of
+	# proxying them through Next.
+	# handle_path /uploads/* {
+	#     root * /opt/portal-berita/backend/uploads
+	#     file_server
+	#     header Cache-Control "public, max-age=604800"
+	# }
+
+	reverse_proxy 127.0.0.1:3000 {
+		# Caddy already sets X-Forwarded-For/-Proto/-Host from the real
+		# connecting client and overwrites any client-supplied value, which is
+		# exactly what the backend's TRUSTED_PROXIES-based RealIP middleware
+		# needs (docs/deploy.md "Trusted proxies") — no extra header_up lines
+		# are required here.
+	}
+
+	# Optional: HSTS at the proxy (the app also sends this header itself when
+	# NEXT_PUBLIC_SITE_URL is https://).
+	# header Strict-Transport-Security "max-age=63072000; includeSubDomains"
+}

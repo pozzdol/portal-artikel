@@ -1,0 +1,28 @@
+# --- Go (backend) ---
+backend/bin/
+backend/.env
+backend/uploads/*
+!backend/uploads/.gitkeep
+!backend/uploads/brand/
+*.test
+coverage.out
+
+# --- Node (frontend) ---
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env*
+!frontend/.env.example
+*.tsbuildinfo
+
+# --- Misc ---
+.DS_Store
+*.log
+.env
+.env.local
+.idea/
+.vscode/
+
+# --- Backups (deploy/backup.sh default target) ---
+backups/
+*.dump

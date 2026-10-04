@@ -1,0 +1,48 @@
+# ALMAIDAH frontend (Next.js, "next start" — no Docker, no "output: standalone").
+# Copy to /etc/systemd/system/almaidah-web.service, then:
+#   systemctl daemon-reload && systemctl enable --now almaidah-web
+#
+# Requires almaidah-api to already be listening: the production build itself
+# fetches the API to prerender the homepage/sitemap, and the running server
+# proxies /api/v1/* and /uploads/* to it via Next rewrites.
+#
+# Adjust User/Group, WorkingDirectory, the bun path and the port if different.
+[Unit]
+Description=ALMAIDAH frontend (Next.js)
+After=network-online.target almaidah-api.service
+Wants=network-online.target
+Requires=almaidah-api.service
+
+[Service]
+Type=simple
+User=almaidah
+Group=almaidah
+WorkingDirectory=/opt/portal-berita/frontend
+
+# frontend/.env.local holds REVALIDATE_SECRET (must match backend/.env) and
+# the public site URL. Keep it chmod 0600, never commit it.
+EnvironmentFile=/opt/portal-berita/frontend/.env.local
+
+# Built with: cd frontend && bun install --frozen-lockfile && bun run build
+# bun is installed per-user (curl -fsSL https://bun.sh/install | bash); adjust
+# the path below to the almaidah user's actual bun install location.
+ExecStart=/home/almaidah/.bun/bin/bun run start -p 3000
+
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65536
+
+# Hardening. ReadWritePaths grants write access to the Next.js cache dir
+# (.next/cache is used by ISR); everything else stays read-only.
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/portal-berita/frontend/.next
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=almaidah-web
+
+[Install]
+WantedBy=multi-user.target

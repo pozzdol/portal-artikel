@@ -1,0 +1,44 @@
+# ALMAIDAH backend API (Go). Copy to /etc/systemd/system/almaidah-api.service,
+# then: systemctl daemon-reload && systemctl enable --now almaidah-api
+#
+# Adjust User/Group, WorkingDirectory and ExecStart if the checkout does not
+# live at /opt/portal-berita or the service account is not "almaidah".
+[Unit]
+Description=ALMAIDAH backend API (Go)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=almaidah
+Group=almaidah
+WorkingDirectory=/opt/portal-berita/backend
+
+# backend/.env holds real secrets (DATABASE_URL, JWT_SECRET, REVALIDATE_SECRET,
+# VIEW_HASH_SALT, ...). Keep it chmod 0600, owned by the almaidah user, and
+# never commit it — only backend/.env.example is tracked in git.
+EnvironmentFile=/opt/portal-berita/backend/.env
+
+# Built with: cd backend && go build -o bin/api ./cmd/api
+ExecStart=/opt/portal-berita/backend/bin/api
+
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65536
+
+# Hardening. ReadWritePaths grants write access to the upload directory only;
+# everything else under WorkingDirectory stays read-only.
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/portal-berita/backend/uploads
+
+# Structured logs go to the journal; inspect with:
+#   journalctl -u almaidah-api -f
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=almaidah-api
+
+[Install]
+WantedBy=multi-user.target

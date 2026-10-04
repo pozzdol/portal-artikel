@@ -1,0 +1,94 @@
+@base = http://localhost:8080/api/v1
+
+### Situs & Layout
+GET {{@base}}/public/site
+
+###
+GET {{@base}}/public/homepage
+
+###
+GET {{@base}}/public/sitemap
+
+### Kategori
+GET {{@base}}/public/categories
+
+###
+GET {{@base}}/public/categories/kajian
+
+### Artikel
+GET {{@base}}/public/articles
+
+###
+GET {{@base}}/public/articles?category=kajian&page=1&per_page=12
+
+###
+GET {{@base}}/public/articles/adab-menuntut-ilmu
+
+###
+GET {{@base}}/public/articles/menjaga-keikhlasan-dalam-menuntut-ilmu-0
+
+### Artikel - Trending & Popular
+GET {{@base}}/public/articles/trending?window=day&limit=5
+
+###
+GET {{@base}}/public/articles/popular?days=30&limit=5
+
+### View beacon (track article view)
+POST {{@base}}/public/articles/1/view
+
+### Slug redirect (jika slug sudah berubah)
+GET {{@base}}/public/articles/old-slug
+
+### Preview draft (dengan token dari admin)
+GET {{@base}}/public/articles/draft-slug?preview=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+### Pencarian
+GET {{@base}}/public/search?q=keikhlasan&page=1
+
+###
+GET {{@base}}/public/search?q=keiklasan
+
+### Tag
+GET {{@base}}/public/tags
+
+###
+GET {{@base}}/public/tags?popular=true&limit=10
+
+###
+GET {{@base}}/public/tags/akhlak
+
+### Penulis
+GET {{@base}}/public/authors/ust-ahmad-fauzi
+
+### Event
+GET {{@base}}/public/events?when=upcoming
+
+###
+GET {{@base}}/public/events?when=past&page=1
+
+###
+GET {{@base}}/public/events?month=2026-09
+
+###
+GET {{@base}}/public/events/kajian-fiqih-september
+
+### Alumni
+GET {{@base}}/public/alumni?featured=true&page=1
+
+###
+GET {{@base}}/public/alumni/ahmad-dahlan
+
+### Video
+GET {{@base}}/public/videos?page=1
+
+###
+GET {{@base}}/public/videos/pengalaman-dakwah
+
+### Pages
+GET {{@base}}/public/pages/profil-yayasan
+
+### Snippets
+GET {{@base}}/public/snippets?type=faq
+
+###
+GET {{@base}}/public/snippets?type=announcement
