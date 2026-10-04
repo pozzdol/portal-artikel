@@ -71,25 +71,16 @@ type FixedImageProps = {
   size: FixedImageSize;
   alt?: string;
   className?: string;
-  /** Adds a constant-light backing plate in dark mode (site logo on a dark
-   * navbar/footer): keeps a dark-glyph logo legible without affecting light
-   * mode at all. */
-  plate?: boolean;
 };
 
 /** Square fixed-size image box for thumbnails, avatars, and the site logo. */
-export function FixedImage({
-  media,
-  size,
-  alt,
-  className,
-  plate,
-}: FixedImageProps) {
+export function FixedImage({ media, size, alt, className }: FixedImageProps) {
   return (
     <div
       className={cn(
-        'border-line bg-muted relative flex-none overflow-hidden border',
-        plate && 'dark:bg-plate dark:p-[3px]',
+        'relative flex-none overflow-hidden',
+        // Placeholder box (design) only when there is no image.
+        !media && 'border-line bg-muted border',
         className,
       )}
       style={{ width: size, height: size }}

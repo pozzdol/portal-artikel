@@ -26,10 +26,6 @@
   --ink-input-bg: #1a1a1a;
   --ink-input-line: #333333;
   --on-gold: #111111;
-  /* Constant light plate for the logo box in dark mode (never redefined
-     under .dark, so it never flips): keeps a dark-glyph logo legible on a
-     dark header/footer background. */
-  --plate: #ffffff;
   --mark: #f3e8bd;
   --danger: #b42318;
   --success: #1f7a3a;
@@ -109,7 +105,6 @@
   --color-ink-input: var(--ink-input-bg);
   --color-ink-input-line: var(--ink-input-line);
   --color-on-gold: var(--on-gold);
-  --color-plate: var(--plate);
   --color-mark: var(--mark);
   --color-danger: var(--danger);
   --color-success: var(--success);

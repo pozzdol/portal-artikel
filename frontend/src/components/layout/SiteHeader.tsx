@@ -33,13 +33,16 @@ export function SiteHeader({ site }: { site: SitePayload }) {
   return (
     <header className="bg-paper border-line sticky top-0 z-50 border-b">
       <Container className="flex flex-nowrap items-center justify-between gap-3 py-[18px] sm:gap-6">
-        <Link href="/" className="flex shrink-0 items-center gap-3.5">
-          <FixedImage media={logoMedia} size={46} alt={`Logo ${name}`} plate />
+        <Link
+          href="/"
+          className="flex min-w-0 items-center gap-3.5 sm:shrink-0"
+        >
+          <FixedImage media={logoMedia} size={46} alt={`Logo ${name}`} />
           <span className="flex flex-col leading-[1.1]">
             <span className="font-serif text-[22px] font-bold tracking-[0.02em]">
               {name}
             </span>
-            <span className="text-meta text-[10.5px] font-medium tracking-[0.08em] whitespace-nowrap uppercase">
+            <span className="text-meta text-[10.5px] font-medium tracking-[0.08em] uppercase sm:whitespace-nowrap">
               {tagline}
             </span>
           </span>

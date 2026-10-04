@@ -18,7 +18,8 @@ terkait **sebelum** mengubah kode.
 | 07 | [Admin CMS](07-admin-cms.md) | Halaman admin, editor, section builder, RBAC di UI |
 | 08 | [Fase Kerja](08-fase-kerja.md) | Pembagian fase, task detail, deliverable, kriteria selesai |
 | 09 | [Konvensi & Operasional](09-konvensi-dan-operasional.md) | Coding standard, environment, cara menjalankan, pertanyaan terbuka |
-| 10 | [Produksi (Deploy)](deploy.md) | Systemd units, Nginx/Caddy config, backup, tanpa Docker |
+| 10 | [Kekurangan & Rencana Pasca-MVP](10-rencana-pasca-mvp.md) | Semua yang belum ada di v1.0.0: tindakan pemilik, keamanan, operasional, editorial, fitur pembaca, SEO, UX, skala, urutan Fase 7–10 |
+| — | [Produksi (Deploy)](deploy.md) | Systemd units, Nginx/Caddy config, backup, tanpa Docker |
 
 ## Ringkasan satu paragraf
 

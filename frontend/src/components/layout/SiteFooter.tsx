@@ -56,12 +56,7 @@ export function SiteFooter({ site }: { site: SitePayload }) {
         <div className="border-line grid grid-cols-1 gap-12 border-b pb-11 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
           <div>
             <div className="mb-4 flex items-center gap-3">
-              <FixedImage
-                media={logoMedia}
-                size={38}
-                alt={`Logo ${name}`}
-                plate
-              />
+              <FixedImage media={logoMedia} size={38} alt={`Logo ${name}`} />
               <span className="font-serif text-[19px] font-bold">{name}</span>
             </div>
             {footer?.description ? (

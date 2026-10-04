@@ -423,6 +423,8 @@ Dijalankan manual bersama pemilik proyek (dan sebagian diotomasi dengan Playwrig
 
 ## Setelah MVP (backlog, belum dijadwalkan)
 
+> Rincian lengkap tiap butir (kondisi, dampak, rencana teknis, kriteria selesai, prioritas, urutan Fase 7–10) ada di [10-rencana-pasca-mvp.md](10-rencana-pasca-mvp.md).
+
 | Prioritas | Item |
 |---|---|
 | Tinggi | Newsletter: tabel subscriber, double opt-in, export CSV, lalu pengiriman email (SMTP/penyedia) |
