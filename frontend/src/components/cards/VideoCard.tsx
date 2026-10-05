@@ -53,19 +53,16 @@ export function VideoCard({
       <HeadingTag
         className={cn(
           'text-ink mb-1.5 font-serif leading-[1.3] font-semibold',
-          size === 'lg' ? 'mt-3.5 text-[20px]' : 'mt-3 text-[16px]',
+          size === 'lg'
+            ? 'mt-3.5 text-[18px] sm:text-[20px]'
+            : 'mt-3 text-[16px]',
         )}
       >
         <Link href={video.url} className="hover:underline">
           {video.title}
         </Link>
       </HeadingTag>
-      <div
-        className={cn(
-          'text-faint font-medium',
-          size === 'lg' ? 'text-[12.5px]' : 'text-[12px]',
-        )}
-      >
+      <div className={cn('text-faint font-medium', 'text-[12.5px]')}>
         {video.view_count !== null
           ? `${formatCompactNumber(video.view_count)} ditonton`
           : null}

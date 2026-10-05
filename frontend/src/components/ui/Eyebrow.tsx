@@ -10,9 +10,9 @@ type EyebrowProps = {
 };
 
 const SIZE_CLASSES: Record<NonNullable<EyebrowProps['size']>, string> = {
-  xs: 'text-[10.5px] tracking-[0.1em]',
-  sm: 'text-[11px] tracking-[0.1em]',
-  md: 'text-[12px] tracking-[0.12em]',
+  xs: 'text-[12px] tracking-[0.1em]',
+  sm: 'text-[12px] tracking-[0.1em]',
+  md: 'text-[12.5px] tracking-[0.12em]',
 };
 
 /** Bold uppercase gold label used above headings and category tags. */

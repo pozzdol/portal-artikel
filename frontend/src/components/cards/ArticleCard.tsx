@@ -33,8 +33,6 @@ type ArticleCardProps = {
   highlightHtml?: string;
 };
 
-const GRID_SIZES = '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw';
-
 function categoryText(
   article: ArticleCardData,
   categoryLabel: 'leaf' | 'parent',
@@ -74,14 +72,15 @@ export function ArticleCard({
 
   if (variant === 'hero') {
     return (
-      <article>
+      <article className="group">
         <Link href={article.url} tabIndex={-1} aria-hidden="true">
           <ImageBox
             media={article.cover}
             ratio="16/9"
             sizes="(min-width: 1024px) 66vw, 100vw"
             alt={article.title}
-            className="mb-6"
+            className="mb-5 sm:mb-6 lg:aspect-[2/1] 2xl:aspect-[16/9]"
+            imgClassName="transition-transform duration-300 group-hover:scale-[1.02]"
             preload={preload ?? true}
             fallbackLabel={`Foto utama — ${article.title}`}
           />
@@ -89,13 +88,13 @@ export function ArticleCard({
         <Eyebrow size="md" className="mb-3.5">
           {category}
         </Eyebrow>
-        <h1 className="text-ink mb-5 font-serif text-[36px] leading-[1.12] font-semibold tracking-[-0.01em] text-balance lg:text-[52px]">
+        <h1 className="text-ink mb-5 font-serif text-[32px] leading-[1.12] font-semibold tracking-[-0.01em] text-balance sm:text-[36px] lg:text-[44px] 2xl:text-[52px]">
           <Link href={article.url} className="hover:underline">
             {article.title}
           </Link>
         </h1>
         {article.excerpt ? (
-          <p className="text-body mb-[26px] max-w-[640px] text-[17px] leading-[1.7]">
+          <p className="text-body mb-[26px] max-w-[640px] text-[16px] leading-[1.7] sm:text-[17px]">
             {article.excerpt}
           </p>
         ) : null}
@@ -112,31 +111,37 @@ export function ArticleCard({
   if (variant === 'grid') {
     const HeadingTag = (headingLevel ?? 'h3') as ElementType;
     return (
-      <Link href={article.url} className="group block">
+      <Link
+        href={article.url}
+        className="group grid grid-cols-[104px_1fr] items-start gap-4 sm:block"
+      >
         <ImageBox
           media={article.cover}
           ratio={imageRatio ?? '4/3'}
-          sizes={GRID_SIZES}
+          sizes="(min-width: 640px) 33vw, 104px"
           alt={article.title}
-          className="mb-[18px]"
+          className="mb-0 sm:mb-[18px]"
+          imgClassName="transition-transform duration-300 group-hover:scale-[1.02]"
           preload={preload}
         />
-        <Eyebrow size="sm" className="mb-2">
-          {category}
-        </Eyebrow>
-        <HeadingTag className="text-ink mb-2.5 font-serif text-[22px] leading-[1.3] font-semibold group-hover:underline">
-          {article.title}
-        </HeadingTag>
-        {excerptOn && article.excerpt ? (
-          <p className="text-soft mb-3.5 text-[14px] leading-[1.6]">
-            {article.excerpt}
-          </p>
-        ) : null}
-        <ArticleMeta
-          author={authorOn ? article.author : undefined}
-          readingMinutes={readingOn ? article.reading_minutes : undefined}
-          variant="card"
-        />
+        <div className="min-w-0">
+          <Eyebrow size="sm" className="mb-1.5 sm:mb-2">
+            {category}
+          </Eyebrow>
+          <HeadingTag className="text-ink mb-2.5 font-serif text-[17px] leading-[1.3] font-semibold group-hover:underline sm:text-[22px]">
+            {article.title}
+          </HeadingTag>
+          {excerptOn && article.excerpt ? (
+            <p className="text-soft mb-3.5 hidden text-[14px] leading-[1.6] sm:block">
+              {article.excerpt}
+            </p>
+          ) : null}
+          <ArticleMeta
+            author={authorOn ? article.author : undefined}
+            readingMinutes={readingOn ? article.reading_minutes : undefined}
+            variant="card"
+          />
+        </div>
       </Link>
     );
   }
@@ -144,27 +149,32 @@ export function ArticleCard({
   if (variant === 'grid-compact') {
     const HeadingTag = (headingLevel ?? 'h3') as ElementType;
     return (
-      <Link href={article.url} className="group block">
+      <Link
+        href={article.url}
+        className="group grid grid-cols-[96px_1fr] items-start gap-3.5 sm:block"
+      >
         <ImageBox
           media={article.cover}
           ratio={imageRatio ?? '4/3'}
-          sizes={GRID_SIZES}
+          sizes="(min-width: 640px) 33vw, 96px"
           alt={article.title}
-          className="mb-4"
-          imgClassName="transition-transform duration-200 group-hover:scale-[1.03]"
+          className="mb-0 sm:mb-4"
+          imgClassName="transition-transform duration-300 group-hover:scale-[1.02]"
           preload={preload}
         />
-        <Eyebrow size="xs" className="mb-2">
-          {category}
-        </Eyebrow>
-        <HeadingTag className="text-ink mb-2 font-serif text-[18px] leading-[1.35] font-semibold group-hover:underline">
-          {article.title}
-        </HeadingTag>
-        <ArticleMeta
-          publishedAt={article.published_at}
-          readingMinutes={readingOn ? article.reading_minutes : undefined}
-          variant="date-minutes"
-        />
+        <div className="min-w-0">
+          <Eyebrow size="xs" className="mb-1.5 sm:mb-2">
+            {category}
+          </Eyebrow>
+          <HeadingTag className="text-ink mb-2 font-serif text-[16px] leading-[1.35] font-semibold group-hover:underline sm:text-[18px]">
+            {article.title}
+          </HeadingTag>
+          <ArticleMeta
+            publishedAt={article.published_at}
+            readingMinutes={readingOn ? article.reading_minutes : undefined}
+            variant="date-minutes"
+          />
+        </div>
       </Link>
     );
   }
@@ -174,11 +184,11 @@ export function ArticleCard({
     return (
       <Link
         href={article.url}
-        className="border-line flex items-start justify-between gap-6 border-b py-[18px]"
+        className="border-line flex items-start justify-between gap-6 border-b py-4 sm:py-[18px]"
       >
         <div>
           <Eyebrow size="xs">{category}</Eyebrow>
-          <HeadingTag className="text-ink mt-1.5 font-serif text-[19px] font-semibold">
+          <HeadingTag className="text-ink mt-1.5 font-serif text-[17px] font-semibold sm:text-[19px]">
             {article.title}
           </HeadingTag>
         </div>
@@ -197,7 +207,7 @@ export function ArticleCard({
       <Link href={article.url} className="group flex gap-4">
         <FixedImage media={article.cover} size={96} alt={article.title} />
         <div className="min-w-0">
-          <HeadingTag className="text-ink mb-1.5 font-serif text-[18px] leading-[1.3] font-semibold group-hover:underline">
+          <HeadingTag className="text-ink mb-1.5 font-serif text-[16px] leading-[1.3] font-semibold group-hover:underline sm:text-[18px]">
             {article.title}
           </HeadingTag>
           <ArticleMeta
@@ -212,12 +222,17 @@ export function ArticleCard({
 
   if (variant === 'trending') {
     return (
-      <Link href={article.url} className="flex items-start gap-3.5">
+      <Link href={article.url} className="group flex items-start gap-3.5">
         <span className="text-gold-strong min-w-[26px] font-serif text-[26px] leading-none font-semibold">
           {String(index ?? 1).padStart(2, '0')}
         </span>
         <div className="flex items-start gap-3">
-          <FixedImage media={article.cover} size={64} alt={article.title} />
+          <FixedImage
+            media={article.cover}
+            size={64}
+            alt={article.title}
+            imgClassName="transition-transform duration-300 group-hover:scale-[1.02]"
+          />
           <p className="text-ink text-[14px] leading-[1.4] font-medium">
             {article.title}
           </p>
@@ -231,12 +246,12 @@ export function ArticleCard({
     return (
       <Link
         href={article.url}
-        className="grid grid-cols-[160px_1fr] items-center gap-7"
+        className="grid grid-cols-[112px_1fr] items-center gap-4 sm:grid-cols-[160px_1fr] sm:gap-7"
       >
         <ImageBox
           media={article.cover}
           ratio="4/3"
-          sizes="160px"
+          sizes="(min-width: 640px) 160px, 112px"
           alt={article.title}
         />
         <div>
@@ -261,27 +276,33 @@ export function ArticleCard({
   if (variant === 'listing-hero') {
     const HeadingTag = (headingLevel ?? 'h2') as ElementType;
     return (
-      <Link href={article.url} className="group block">
+      <Link
+        href={article.url}
+        className="group block md:grid md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:items-center md:gap-8 lg:gap-12"
+      >
         <ImageBox
           media={article.cover}
           ratio="16/9"
-          sizes="(min-width: 1024px) 66vw, 100vw"
+          sizes="(min-width: 768px) 55vw, 100vw"
           alt={article.title}
-          className="mb-[22px]"
+          className="mb-4 md:mb-0"
+          imgClassName="transition-transform duration-300 group-hover:scale-[1.02]"
           preload={preload}
         />
-        <Eyebrow size="sm" className="mb-2.5">
-          {category}
-        </Eyebrow>
-        <HeadingTag className="text-ink mb-3.5 font-serif text-[30px] leading-[1.25] font-semibold group-hover:underline">
-          {article.title}
-        </HeadingTag>
-        {article.excerpt ? (
-          <p className="text-soft mb-3.5 text-[15px] leading-[1.7]">
-            {article.excerpt}
-          </p>
-        ) : null}
-        <ArticleMeta author={article.author} variant="author-title" />
+        <div className="min-w-0">
+          <Eyebrow size="sm" className="mb-2.5">
+            {category}
+          </Eyebrow>
+          <HeadingTag className="text-ink mb-3.5 font-serif text-[24px] leading-[1.2] font-semibold group-hover:underline sm:text-[28px] lg:text-[32px]">
+            {article.title}
+          </HeadingTag>
+          {article.excerpt ? (
+            <p className="text-soft mb-3.5 line-clamp-3 text-[15px] leading-[1.7] md:line-clamp-4">
+              {article.excerpt}
+            </p>
+          ) : null}
+          <ArticleMeta author={article.author} variant="author-title" />
+        </div>
       </Link>
     );
   }

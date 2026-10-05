@@ -50,8 +50,8 @@ export function DurationBadge({ seconds, size }: DurationBadgeProps) {
       className={cn(
         'bg-ink-surface text-on-ink pointer-events-none absolute rounded-[3px] font-semibold',
         size === 'lg'
-          ? 'right-[10px] bottom-[10px] px-2 py-[3px] text-[11px]'
-          : 'right-2 bottom-2 px-1.5 py-0.5 text-[10px]',
+          ? 'right-[10px] bottom-[10px] px-2 py-[3px] text-[12px]'
+          : 'right-2 bottom-2 px-1.5 py-0.5 text-[12px]',
       )}
     >
       {formatDuration(seconds)}

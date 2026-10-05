@@ -56,9 +56,17 @@ export function ImageBox({
           fetchPriority={preload ? 'high' : undefined}
         />
       ) : fallbackLabel ? (
-        <div className="text-ghost flex h-full w-full items-center justify-center px-4 text-center text-[13px]">
-          {fallbackLabel}
-        </div>
+        <>
+          <Image
+            src="/brand/logo.png"
+            alt=""
+            width={48}
+            height={48}
+            aria-hidden="true"
+            className="absolute top-1/2 left-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 object-contain opacity-15 grayscale"
+          />
+          <span className="sr-only">{fallbackLabel}</span>
+        </>
       ) : null}
     </div>
   );
@@ -71,10 +79,17 @@ type FixedImageProps = {
   size: FixedImageSize;
   alt?: string;
   className?: string;
+  imgClassName?: string;
 };
 
 /** Square fixed-size image box for thumbnails, avatars, and the site logo. */
-export function FixedImage({ media, size, alt, className }: FixedImageProps) {
+export function FixedImage({
+  media,
+  size,
+  alt,
+  className,
+  imgClassName,
+}: FixedImageProps) {
   return (
     <div
       className={cn(
@@ -91,7 +106,7 @@ export function FixedImage({ media, size, alt, className }: FixedImageProps) {
           alt={alt ?? media.alt ?? ''}
           fill
           sizes={`${size}px`}
-          className="object-contain"
+          className={cn('object-contain', imgClassName)}
         />
       ) : null}
     </div>

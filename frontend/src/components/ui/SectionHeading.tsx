@@ -31,9 +31,9 @@ export function SectionHeading({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-baseline justify-between gap-4',
-        divider && 'border-line mb-11 border-b pb-5',
-        !divider && 'mb-11',
+        'flex flex-col items-start gap-4 sm:flex-row sm:items-baseline sm:justify-between',
+        divider && 'border-line mb-7 border-b pb-4 sm:mb-11 sm:pb-5',
+        !divider && 'mb-7 sm:mb-11',
         className,
       )}
     >
@@ -56,7 +56,7 @@ export function SectionHeading({
       {moreLink ? (
         <Link
           href={moreLink.href}
-          className="border-ink text-ink border-b pb-0.5 text-[13.5px] font-medium whitespace-nowrap"
+          className="border-ink text-ink inline-flex min-h-11 w-full items-center justify-center border py-2.5 text-[13.5px] font-medium whitespace-nowrap sm:inline sm:min-h-0 sm:w-auto sm:border-0 sm:border-b sm:py-0 sm:pb-0.5"
         >
           {/(?:→|->)\s*$/.test(moreLink.label)
             ? moreLink.label

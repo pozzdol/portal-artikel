@@ -52,10 +52,10 @@ function buildPageWindow(
 // Outline-variant Button, stripped of the shadcn defaults that would show
 // (bg-background/shadow-xs/hover:bg-muted) — only the border + radius stay.
 const navButtonClass =
-  'h-9 w-auto rounded-none border-line bg-transparent px-3.5 py-2 text-[13px] font-medium shadow-none hover:border-ink hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent';
+  'h-11 w-auto rounded-none border-line bg-transparent px-4 py-2 lg:h-9 lg:px-3.5 text-[13px] font-medium shadow-none hover:border-ink hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent';
 
 const numberButtonClass =
-  'h-9 w-9 rounded-none border-line bg-transparent p-0 text-[13px] font-medium shadow-none hover:border-ink hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent';
+  'size-11 rounded-none lg:size-9 border-line bg-transparent p-0 text-[13px] font-medium shadow-none hover:border-ink hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent';
 
 const activeNumberButtonClass =
   'border-ink bg-ink text-paper hover:border-ink hover:bg-ink hover:text-paper dark:bg-ink dark:hover:bg-ink';
@@ -89,20 +89,20 @@ export function Pagination({
               className={navButtonClass}
             >
               <Link href={hrefFor(page - 1)} rel="prev">
-                Sebelumnya
+                <span aria-hidden="true">‹</span> Sebelumnya
               </Link>
             </Button>
           </PaginationItem>
         ) : null}
         {pages.map((p, i) =>
           p === 'ellipsis' ? (
-            <PaginationItem key={`ellipsis-${i}`}>
+            <PaginationItem key={`ellipsis-${i}`} className="hidden sm:block">
               <span aria-hidden="true" className="text-faint px-1 text-[13px]">
                 …
               </span>
             </PaginationItem>
           ) : (
-            <PaginationItem key={p}>
+            <PaginationItem key={p} className="hidden sm:block">
               <Button
                 asChild
                 variant="outline"
@@ -122,6 +122,11 @@ export function Pagination({
             </PaginationItem>
           ),
         )}
+        <PaginationItem className="sm:hidden">
+          <span className="text-meta text-[13px] tabular-nums">
+            Halaman {page} dari {totalPages}
+          </span>
+        </PaginationItem>
         {page < totalPages ? (
           <PaginationItem>
             <Button
@@ -131,7 +136,7 @@ export function Pagination({
               className={navButtonClass}
             >
               <Link href={hrefFor(page + 1)} rel="next">
-                Berikutnya
+                Berikutnya <span aria-hidden="true">›</span>
               </Link>
             </Button>
           </PaginationItem>

@@ -61,7 +61,7 @@ export function ArticleMeta({
     return (
       <div
         className={cn(
-          'text-meta flex flex-wrap items-center gap-4 text-[13.5px] font-medium',
+          'text-meta flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px] font-medium',
           className,
         )}
       >
@@ -88,7 +88,7 @@ export function ArticleMeta({
 
   if (variant === 'author-title') {
     return (
-      <div className={cn('text-faint text-[12.5px] font-medium', className)}>
+      <div className={cn('text-faint text-[13px] font-medium', className)}>
         {author ? <AuthorName author={author} linkAuthor={linkAuthor} /> : null}
         {author?.title ? <span> · {author.title}</span> : null}
       </div>
@@ -98,7 +98,7 @@ export function ArticleMeta({
   if (variant === 'date-minutes') {
     const reading = readingMinutes ? readingShort(readingMinutes) : null;
     return (
-      <div className={cn('text-faint text-[11.5px] font-medium', className)}>
+      <div className={cn('text-faint text-[12.5px] font-medium', className)}>
         {publishedAt ? (
           <time dateTime={dateTimeAttr(publishedAt)}>
             {formatDateLong(publishedAt)}
@@ -119,7 +119,7 @@ export function ArticleMeta({
     <div
       className={cn(
         'text-faint font-medium',
-        variant === 'compact' ? 'text-[12px]' : 'text-[12.5px]',
+        variant === 'compact' ? 'text-[12.5px]' : 'text-[13px]',
         className,
       )}
     >

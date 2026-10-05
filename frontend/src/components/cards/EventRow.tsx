@@ -18,17 +18,20 @@ export function EventRow({ event, showSummary, headingLevel }: EventRowProps) {
   const HeadingTag = (headingLevel ?? 'h3') as ElementType;
 
   return (
-    <Link href={event.url} className="border-line flex gap-6 border-b py-5">
+    <Link
+      href={event.url}
+      className="border-line flex gap-4 border-b py-4 sm:gap-6 sm:py-5"
+    >
       <div className="w-16 flex-none text-center">
         <div className="text-gold-strong font-serif text-[26px] leading-none font-bold">
           {day}
         </div>
-        <div className="text-faint mt-1 text-[11px] font-semibold uppercase">
+        <div className="text-faint mt-1 text-[12px] font-semibold uppercase">
           {month}
         </div>
       </div>
       <div>
-        <HeadingTag className="text-ink mb-1.5 font-serif text-[20px] font-semibold">
+        <HeadingTag className="text-ink mb-1.5 font-serif text-[18px] font-semibold sm:text-[20px]">
           {event.title}
         </HeadingTag>
         <div className="text-soft text-[13px] font-medium">

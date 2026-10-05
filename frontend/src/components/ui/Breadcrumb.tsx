@@ -38,7 +38,7 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
     <>
       <JsonLd data={jsonLd} />
       <BreadcrumbRoot>
-        <BreadcrumbList className="text-faint flex-wrap gap-2 text-[12.5px] font-medium sm:gap-2">
+        <BreadcrumbList className="text-faint flex-wrap gap-1.5 text-[13px] font-medium sm:gap-1.5">
           {items.map((item, index) => {
             const isLast = index === items.length - 1;
             return (
@@ -53,7 +53,12 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
                 <BreadcrumbItem>
                   {!isLast && item.href ? (
                     <BreadcrumbLink asChild>
-                      <Link href={item.href}>{item.label}</Link>
+                      <Link
+                        href={item.href}
+                        className="inline-flex min-h-11 items-center lg:min-h-0"
+                      >
+                        {item.label}
+                      </Link>
                     </BreadcrumbLink>
                   ) : (
                     <BreadcrumbPage className={cnLast(isLast)}>
@@ -73,5 +78,7 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
 /** `BreadcrumbPage` defaults to `font-normal text-foreground`; restore the
  * trail's own weight and only color the final crumb ink (others stay faint). */
 function cnLast(isLast: boolean): string {
-  return isLast ? 'font-medium text-ink' : 'font-medium text-faint';
+  return isLast
+    ? 'max-w-[60vw] truncate font-medium text-ink sm:max-w-none'
+    : 'font-medium text-faint';
 }

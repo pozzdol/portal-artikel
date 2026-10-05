@@ -11,7 +11,7 @@ type TagChipProps = {
 };
 
 const chipClass =
-  'h-auto w-fit rounded-full border-line px-3.5 py-1.5 text-[12px] font-medium text-ink normal-case transition-colors hover:border-ink [a]:hover:bg-transparent [a]:hover:text-ink';
+  'h-auto w-fit rounded-full border-line min-h-11 items-center px-4 text-[13px] font-medium lg:min-h-0 lg:px-3.5 lg:py-1.5 lg:text-[12.5px] text-ink normal-case transition-colors hover:border-ink [a]:hover:bg-transparent [a]:hover:text-ink';
 
 /** Pill-shaped tag/category chip, optionally linked. */
 export function TagChip({ href, children, className }: TagChipProps) {
