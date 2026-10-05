@@ -4,7 +4,6 @@ import * as React from 'react';
 
 import { ListPageSkeleton } from '@/components/admin/ListPageSkeleton';
 import { PageHeader } from '@/components/admin/PageHeader';
-import { AdminBreadcrumb } from '@/components/admin/shell/AdminBreadcrumb';
 import {
   Tabs,
   TabsContent,
@@ -41,19 +40,24 @@ export function MenusView() {
       <PageHeader
         title="Menu"
         description="Susun item navigasi header dan footer. Tombol Simpan mengganti seluruh pohon menu ini."
-        breadcrumb={<AdminBreadcrumb />}
       />
       {isLoading || !menus ? (
         <ListPageSkeleton rows={4} columns={1} />
       ) : (
         <Tabs value={activeCode} onValueChange={handleTabChange}>
-          <TabsList>
-            {menus.map((m) => (
-              <TabsTrigger key={m.code} value={m.code}>
-                {m.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="no-scrollbar -mx-4 overflow-x-auto overflow-y-hidden px-4 max-md:[mask-image:linear-gradient(to_right,black_calc(100%-32px),transparent)] md:mx-0 md:px-0">
+            <TabsList className="h-11 w-max justify-start md:h-10 md:w-full">
+              {menus.map((m) => (
+                <TabsTrigger
+                  key={m.code}
+                  value={m.code}
+                  className="h-10 flex-none px-3 md:flex-1"
+                >
+                  {m.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
           {menus.map((m) => (
             <TabsContent key={m.code} value={m.code} className="pt-4">
               <MenuEditor

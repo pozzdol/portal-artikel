@@ -39,7 +39,7 @@ export function AdminShell({
           <div
             id="admin-main"
             tabIndex={-1}
-            className="flex-1 px-4 py-6 outline-none md:px-8 md:py-8"
+            className="flex-1 px-4 py-5 outline-none md:px-6 lg:px-8 lg:py-8"
           >
             <div className="mx-auto w-full max-w-[1400px]">{children}</div>
           </div>

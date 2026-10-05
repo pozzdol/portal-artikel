@@ -142,7 +142,7 @@ export function ArticleList() {
                 {a.is_featured ? (
                   <Badge
                     variant="outline"
-                    className="border-gold/40 text-gold-strong h-4 px-1.5 text-[10px]"
+                    className="border-gold/40 text-gold-strong h-5 px-1.5 text-xs"
                   >
                     Unggulan
                   </Badge>
@@ -150,11 +150,17 @@ export function ArticleList() {
                 {a.is_breaking ? (
                   <Badge
                     variant="outline"
-                    className="border-destructive/40 text-destructive h-4 px-1.5 text-[10px]"
+                    className="border-destructive/40 text-destructive h-5 px-1.5 text-xs"
                   >
                     Breaking
                   </Badge>
                 ) : null}
+                <span className="lg:hidden">
+                  {a.author.display_name}
+                  {a.published_at
+                    ? ` · ${formatWib(a.published_at, 'd MMM yyyy')}`
+                    : ''}
+                </span>
               </div>
             </div>
           );
@@ -163,7 +169,7 @@ export function ArticleList() {
       col.display({
         id: 'author',
         header: 'Penulis',
-        meta: { hideBelow: 'md' },
+        meta: { hideBelow: 'lg' },
         cell: ({ row }) => (
           <span className="whitespace-nowrap">
             {row.original.author.display_name}
@@ -178,7 +184,7 @@ export function ArticleList() {
       col.display({
         id: 'published_at',
         header: params.trashed ? 'Dihapus' : 'Tanggal terbit',
-        meta: { sortKey: 'published_at', hideBelow: 'sm' },
+        meta: { sortKey: 'published_at', hideBelow: 'md' },
         cell: ({ row }) => (
           <DateCell a={row.original} trashed={params.trashed} />
         ),
@@ -186,7 +192,12 @@ export function ArticleList() {
       col.display({
         id: 'view_count',
         header: 'Dibaca',
-        meta: { sortKey: 'view_count', align: 'right', hideBelow: 'lg' },
+        meta: {
+          sortKey: 'view_count',
+          align: 'right',
+          hideBelow: 'xl',
+          compact: true,
+        },
         cell: ({ row }) => (
           <span className="tabular-nums">
             {numberFmt.format(row.original.view_count)}
@@ -227,7 +238,7 @@ export function ArticleList() {
       description="Tulis artikel pertama untuk mengisi portal."
       action={
         perms.create ? (
-          <Button asChild size="sm">
+          <Button asChild size="sm" variant="gold">
             <Link href="/admin/articles/new">
               <PlusIcon />
               Tulis artikel
@@ -245,7 +256,7 @@ export function ArticleList() {
         description="Kajian, berita, dan tulisan yang tampil di portal."
         actions={
           perms.create ? (
-            <Button asChild>
+            <Button asChild variant="gold">
               <Link href="/admin/articles/new">
                 <PlusIcon />
                 Tulis artikel
@@ -259,7 +270,7 @@ export function ArticleList() {
         value={params.trashed ? 'trash' : 'all'}
         onValueChange={(v) => set({ trashed: v === 'trash' })}
       >
-        <TabsList variant="line">
+        <TabsList variant="line" className="h-11 lg:h-9">
           <TabsTrigger value="all">Semua artikel</TabsTrigger>
           <TabsTrigger value="trash">Sampah</TabsTrigger>
         </TabsList>
@@ -305,7 +316,10 @@ export function ArticleList() {
               value={status ?? ALL}
               onValueChange={(v) => set({ status: v === ALL ? '' : v })}
             >
-              <SelectTrigger className="w-40" aria-label="Filter status">
+              <SelectTrigger
+                className="w-full sm:w-40"
+                aria-label="Filter status"
+              >
                 <SelectValue placeholder="Semua status" />
               </SelectTrigger>
               <SelectContent>
@@ -317,7 +331,7 @@ export function ArticleList() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="w-52">
+            <div className="w-full sm:w-52">
               <CategoryCombobox
                 value={params.category || null}
                 onChange={(slug) => set({ category: slug ?? '' })}
@@ -325,7 +339,7 @@ export function ArticleList() {
               />
             </div>
             {perms.create ? (
-              <div className="w-52">
+              <div className="w-full sm:w-52">
                 <AuthorSelect
                   value={params.author > 0 ? params.author : null}
                   onChange={(id) => set({ author: id ?? 0 })}

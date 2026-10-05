@@ -71,7 +71,7 @@ export function AdminSidebar({ brand }: { brand: AdminBrandProps }) {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-sidebar-border h-14 justify-center border-b px-3 group-data-[collapsible=icon]:px-2">
+      <SidebarHeader className="border-sidebar-border h-12 justify-center border-b px-3 group-data-[collapsible=icon]:px-2 lg:h-14">
         <Link
           href="/admin"
           className="flex min-w-0 items-center gap-2.5"
@@ -90,16 +90,16 @@ export function AdminSidebar({ brand }: { brand: AdminBrandProps }) {
         </Link>
       </SidebarHeader>
 
-      <SidebarContent className="gap-0 py-2">
+      <SidebarContent className="[scrollbar-width:thin] gap-0 overflow-y-auto py-2 pb-2">
         {groups.map((group, i) => (
-          <SidebarGroup key={group.label ?? `g${i}`} className="py-1.5">
+          <SidebarGroup key={group.label ?? `g${i}`} className="py-1">
             {group.label ? (
-              <SidebarGroupLabel className="text-meta text-[12px] font-medium">
+              <SidebarGroupLabel className="text-meta h-7 text-[12px] font-medium">
                 {group.label}
               </SidebarGroupLabel>
             ) : null}
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-0.5">
                 {group.items.map((item) => (
                   <NavEntry
                     key={item.href}
@@ -113,7 +113,7 @@ export function AdminSidebar({ brand }: { brand: AdminBrandProps }) {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="border-sidebar-border border-t">
+      <SidebarFooter className="border-sidebar-border bg-sidebar border-t">
         <SidebarMenu>
           <NavEntry
             item={PROFILE_ITEM}

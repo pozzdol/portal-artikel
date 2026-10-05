@@ -37,10 +37,17 @@ export function SettingsView() {
       />
       {isLoading ? null : (
         <Tabs defaultValue="identity">
-          <div className="-mx-1 overflow-x-auto px-1">
-            <TabsList variant="line" className="w-full justify-start">
+          <div className="no-scrollbar -mx-4 overflow-x-auto overflow-y-hidden px-4 max-md:[mask-image:linear-gradient(to_right,black_calc(100%-32px),transparent)] md:mx-0 md:px-0">
+            <TabsList
+              variant="line"
+              className="h-11 w-max justify-start md:h-10 md:w-full"
+            >
               {TABS.map((t) => (
-                <TabsTrigger key={t.value} value={t.value} className="shrink-0">
+                <TabsTrigger
+                  key={t.value}
+                  value={t.value}
+                  className="h-10 flex-none px-3 md:flex-1"
+                >
                   {t.label}
                 </TabsTrigger>
               ))}

@@ -48,18 +48,18 @@ function StatCards({
     { label: 'Kunjungan 7 hari', value: views7d, icon: EyeIcon },
   ];
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {stats.map((s) => (
-        <Card key={s.label}>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center">
+        <Card key={s.label} size="sm">
+          <CardContent className="flex flex-row items-center gap-3 py-3 sm:gap-4 sm:py-4">
+            <div className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center sm:size-10">
               <s.icon className="size-5" aria-hidden />
             </div>
             <div className="flex flex-col">
-              <span className="font-serif text-2xl leading-none font-medium">
+              <span className="font-sans text-[22px] leading-none font-semibold tracking-tight lining-nums tabular-nums sm:text-2xl">
                 {s.value.toLocaleString('id-ID')}
               </span>
-              <span className="text-muted-foreground mt-1 text-xs">
+              <span className="text-muted-foreground mt-1 text-[12.5px] sm:text-[13px]">
                 {s.label}
               </span>
             </div>
@@ -72,11 +72,11 @@ function StatCards({
 
 function StatCardsSkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i}>
-          <CardContent className="flex items-center gap-4 py-5">
-            <Skeleton className="size-10" />
+        <Card key={i} size="sm">
+          <CardContent className="flex flex-row items-center gap-3 py-3 sm:gap-4 sm:py-4">
+            <Skeleton className="size-9 sm:size-10" />
             <div className="flex flex-1 flex-col gap-2">
               <Skeleton className="h-6 w-16" />
               <Skeleton className="h-3 w-24" />
@@ -155,6 +155,7 @@ export function DashboardView() {
                   <EmptyState
                     title="Belum ada data"
                     description="Belum ada kunjungan artikel minggu ini."
+                    className="py-6"
                   />
                 ) : (
                   <ol className="flex flex-col gap-3">
@@ -202,6 +203,16 @@ export function DashboardView() {
                   <EmptyState
                     title="Tidak ada draf"
                     description="Anda belum memiliki artikel draf atau terjadwal."
+                    className="py-6"
+                    action={
+                      canWriteArticles ? (
+                        <Button asChild variant="outline" size="sm">
+                          <Link href="/admin/articles/new">
+                            Tulis artikel pertama
+                          </Link>
+                        </Button>
+                      ) : undefined
+                    }
                   />
                 ) : (
                   <ul className="flex flex-col gap-3">
@@ -241,6 +252,7 @@ export function DashboardView() {
                   <EmptyState
                     title="Tidak ada agenda"
                     description="Belum ada agenda mendatang yang terjadwal."
+                    className="py-6"
                   />
                 ) : (
                   <ul className="flex flex-col gap-3">

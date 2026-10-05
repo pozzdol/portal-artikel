@@ -35,7 +35,7 @@ export function ViewsChart({ data }: { data: ViewsChartPoint[] }) {
           axisLine={false}
           tickMargin={8}
           interval="preserveStartEnd"
-          fontSize={11}
+          fontSize={12}
         />
         <ChartTooltip
           cursor={false}

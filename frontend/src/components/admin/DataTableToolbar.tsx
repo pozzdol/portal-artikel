@@ -28,19 +28,19 @@ export function DataTableToolbar({
   return (
     <div
       className={cn(
-        'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
+        'flex flex-col gap-3 md:flex-row md:items-center md:justify-between',
         className,
       )}
     >
-      <div className="flex flex-1 flex-wrap items-center gap-2">
+      <div className="grid flex-1 grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
         {search ? (
-          <div className="relative w-full max-w-xs">
+          <div className="relative col-span-2 w-full sm:max-w-xs">
             <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
             <Input
               value={search.value}
               onChange={(e) => search.onChange(e.target.value)}
               placeholder={search.placeholder ?? 'Cari…'}
-              className="pl-8"
+              className="h-10 pl-8 md:h-9"
             />
           </div>
         ) : null}

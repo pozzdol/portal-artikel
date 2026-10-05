@@ -12,7 +12,10 @@ import { UserMenu } from './UserMenu';
 export function AdminTopbar() {
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/85 border-line sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b px-3 backdrop-blur md:px-5">
-      <SidebarTrigger className="-ml-1" aria-label="Buka/tutup sidebar" />
+      <SidebarTrigger
+        className="-ml-1 size-11 lg:size-7"
+        aria-label="Buka/tutup sidebar"
+      />
       <Separator
         orientation="vertical"
         className="mr-1 h-5 data-vertical:self-center"
@@ -23,7 +26,7 @@ export function AdminTopbar() {
           asChild
           variant="ghost"
           size="sm"
-          className="text-meta hover:text-ink"
+          className="text-meta hover:text-ink min-h-11 min-w-11 lg:min-h-0 lg:min-w-0"
         >
           <a href="/" target="_blank" rel="noopener">
             <span className="hidden sm:inline">Lihat situs</span>

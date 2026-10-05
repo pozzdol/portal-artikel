@@ -41,7 +41,9 @@ export type DataTableColumnMeta = {
   sortKey?: string;
   align?: 'left' | 'center' | 'right';
   /** Progressive disclosure for dense tables. */
-  hideBelow?: 'sm' | 'md' | 'lg';
+  hideBelow?: 'sm' | 'md' | 'lg' | 'xl';
+  /** Shrink the column to its content (w-px, no wrapping). */
+  compact?: boolean;
 };
 
 const features = tableFeatures({ columnMeta: {} as DataTableColumnMeta });
@@ -106,8 +108,10 @@ function cellClass(meta: DataTableColumnMeta | undefined): string | undefined {
         ? 'hidden md:table-cell'
         : meta?.hideBelow === 'lg'
           ? 'hidden lg:table-cell'
-          : undefined;
-  return cn(align, hide);
+          : meta?.hideBelow === 'xl'
+            ? 'hidden xl:table-cell'
+            : undefined;
+  return cn(align, hide, meta?.compact && 'w-px whitespace-nowrap');
 }
 
 export function DataTable<TData extends RowData>({
@@ -159,7 +163,7 @@ export function DataTable<TData extends RowData>({
   return (
     <div className={cn('flex flex-col gap-4', className)}>
       {toolbar}
-      <div className="border-line overflow-x-auto rounded-none border">
+      <div className="border-line rounded-none border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

@@ -56,7 +56,7 @@ type QuickFilter = 'all' | 'admin' | 'authors';
 
 const FILTERS: { value: QuickFilter; label: string }[] = [
   { value: 'all', label: 'Semua' },
-  { value: 'admin', label: 'Admin (bisa login)' },
+  { value: 'admin', label: 'Punya akun login' },
   { value: 'authors', label: 'Penulis saja' },
 ];
 
@@ -182,6 +182,11 @@ export function UsersView() {
             {row.title ? (
               <span className="text-muted-foreground text-xs">{row.title}</span>
             ) : null}
+            {row.email ? (
+              <span className="text-muted-foreground text-xs md:hidden">
+                {row.email}
+              </span>
+            ) : null}
           </div>
         );
       },
@@ -190,8 +195,10 @@ export function UsersView() {
       header: 'Email',
       cell: (ctx) =>
         ctx.getValue() ?? <span className="text-muted-foreground">—</span>,
+      meta: { hideBelow: 'md' },
     }),
     helper.accessor('roles', {
+      meta: { hideBelow: 'sm' },
       header: 'Role',
       cell: (ctx) => {
         const roles = ctx.getValue();
@@ -234,7 +241,7 @@ export function UsersView() {
           <span className="text-muted-foreground">—</span>
         );
       },
-      meta: { hideBelow: 'lg' },
+      meta: { hideBelow: 'xl' },
     }),
   ];
 
@@ -302,12 +309,13 @@ export function UsersView() {
               variant="outline"
               value={params.filter}
               onValueChange={(v) => v && set({ filter: v as QuickFilter })}
+              className="col-span-2 w-full sm:w-auto"
             >
               {FILTERS.map((f) => (
                 <ToggleGroupItem
                   key={f.value}
                   value={f.value}
-                  className="text-xs"
+                  className="min-h-10 flex-1 text-xs sm:min-h-9 sm:flex-none"
                 >
                   {f.label}
                 </ToggleGroupItem>

@@ -90,7 +90,7 @@ export function MediaLibraryPage() {
         }}
       >
         <Select value={params.type} onValueChange={(v) => set({ type: v })}>
-          <SelectTrigger className="w-36">
+          <SelectTrigger className="w-full sm:w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -150,6 +150,7 @@ export function MediaLibraryPage() {
             <Button
               variant="outline"
               size="icon-sm"
+              className="size-10 sm:size-8"
               disabled={params.page <= 1 || list.isFetching}
               onClick={() =>
                 set({ page: params.page - 1 }, { resetPage: false })
@@ -161,6 +162,7 @@ export function MediaLibraryPage() {
             <Button
               variant="outline"
               size="icon-sm"
+              className="size-10 sm:size-8"
               disabled={params.page >= totalPages || list.isFetching}
               onClick={() =>
                 set({ page: params.page + 1 }, { resetPage: false })
