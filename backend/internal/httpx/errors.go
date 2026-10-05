@@ -56,7 +56,7 @@ func TokenExpired() *Error {
 	return newError(http.StatusUnauthorized, "token_expired", "Sesi telah kedaluwarsa.")
 }
 
-// InvalidCredentials: wrong email or password at login.
+// InvalidCredentials: wrong identifier (email/phone) or password at login.
 func InvalidCredentials() *Error {
 	return newError(http.StatusUnauthorized, "invalid_credentials", "Email atau kata sandi salah.")
 }
@@ -64,6 +64,11 @@ func InvalidCredentials() *Error {
 // Forbidden: missing permission.
 func Forbidden() *Error {
 	return newError(http.StatusForbidden, "forbidden", "Anda tidak memiliki izin untuk tindakan ini.")
+}
+
+// PasswordChangeRequired: the user must change the initial password first.
+func PasswordChangeRequired() *Error {
+	return newError(http.StatusForbidden, "password_change_required", "Anda wajib mengganti kata sandi terlebih dahulu.")
 }
 
 // CSRFFailed: CSRF header mismatch.
@@ -141,6 +146,8 @@ func fromDomain(err error) (e *Error, ok bool) {
 		return withMsg(InvalidCredentials()), true
 	case errors.Is(err, apperr.ErrForbidden):
 		return withMsg(Forbidden()), true
+	case errors.Is(err, apperr.ErrPasswordChangeRequired):
+		return withMsg(PasswordChangeRequired()), true
 	case errors.Is(err, apperr.ErrCSRF):
 		return withMsg(CSRFFailed()), true
 	case errors.Is(err, apperr.ErrNotFound):

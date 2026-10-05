@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { safeNext } from './safe-next';
+import { CHANGE_PASSWORD_PATH, postLoginPath, safeNext } from './safe-next';
 
 describe('safeNext', () => {
   test('keeps admin paths with query and hash', () => {
@@ -40,5 +40,25 @@ describe('safeNext', () => {
     expect(safeNext('/admin/login')).toBe('/admin');
     expect(safeNext('/admin/login?next=/admin')).toBe('/admin');
     expect(safeNext('/admin/loginx')).toBe('/admin/loginx');
+  });
+
+  test('never returns to the forced password change page', () => {
+    expect(safeNext('/admin/ganti-password')).toBe('/admin');
+    expect(safeNext('/admin/ganti-password?x=1')).toBe('/admin');
+    expect(safeNext('/admin/ganti-passwordx')).toBe('/admin/ganti-passwordx');
+  });
+});
+
+describe('postLoginPath', () => {
+  test('flagged users go to the change page, others to next', () => {
+    expect(postLoginPath({ must_change_password: true }, '/admin/media')).toBe(
+      CHANGE_PASSWORD_PATH,
+    );
+    expect(postLoginPath({ must_change_password: false }, '/admin/media')).toBe(
+      '/admin/media',
+    );
+    expect(postLoginPath({ must_change_password: false }, '//evil')).toBe(
+      '/admin',
+    );
   });
 });

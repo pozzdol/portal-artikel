@@ -184,12 +184,94 @@ func TestLoginFailures(t *testing.T) {
 	assert.Equal(t, 4, e.auditCount(audit.ActionLoginFailed))
 	// Known users are attributed, unknown email is not.
 	assert.Equal(t, 1, e.count("SELECT count(*) FROM audit_logs WHERE action = 'login_failed' AND user_id IS NULL"))
-	assert.Equal(t, 1, e.count(`SELECT count(*) FROM audit_logs WHERE action = 'login_failed' AND changes->>'email' = 'nobody@test.local'`))
+	assert.Equal(t, 1, e.count(`SELECT count(*) FROM audit_logs WHERE action = 'login_failed' AND changes->>'identifier' = 'nobody@test.local' AND changes->>'kind' = 'email'`))
 	assert.Equal(t, 0, e.count("SELECT count(*) FROM refresh_tokens"))
 
-	// Validation.
-	_, rec := e.login("not-an-email", "x")
+	// Unparseable identifiers fail exactly like unknown users (no enumeration).
+	for _, ident := range []string{"not-an-email", "+1 555 0100", "0721234567", "08abc"} {
+		_, rec := e.login(ident, "Rahasia-12345")
+		require.Equal(t, http.StatusUnauthorized, rec.Code, ident)
+		code, _ := errCode(t, rec)
+		assert.Equal(t, "invalid_credentials", code, ident)
+	}
+
+	// Validation: identifier and password are required.
+	_, rec := e.login("   ", "x")
 	assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+	assert.Contains(t, rec.Body.String(), "identifier")
+	rec = e.do(http.MethodPost, "/login", map[string]any{"identifier": testdb.SuperAdminEmail}, jar{})
+	assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+}
+
+func TestLoginByPhone(t *testing.T) {
+	e := newEnv(t)
+	const pw = "Rahasia-Telepon-1"
+	id := testdb.CreateUser(t, e.pool, testdb.UserOpts{
+		Phone: "8123456789", Password: pw, DisplayName: "Pengguna HP",
+		CanLogin: true, IsActive: true, Roles: []string{"admin"},
+	})
+	for _, ident := range []string{"0812-3456-789", "+62 812 3456 789", "628123456789", "8123456789", " 0812.3456.789 ", "(0812) 3456 789"} {
+		t.Run(ident, func(t *testing.T) {
+			rec := e.do(http.MethodPost, "/login", map[string]any{"identifier": ident, "password": pw}, jar{})
+			require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+			var body struct {
+				Data struct{ User Me } `json:"data"`
+			}
+			require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+			assert.Equal(t, id, body.Data.User.ID)
+			require.NotNil(t, body.Data.User.Phone)
+			assert.Equal(t, "8123456789", *body.Data.User.Phone)
+			assert.Nil(t, body.Data.User.Email)
+			assert.False(t, body.Data.User.MustChangePassword)
+		})
+	}
+
+	// Wrong password / unknown number: same generic 401; audit uses the
+	// normalized number and kind.
+	rec := e.do(http.MethodPost, "/login", map[string]any{"identifier": "0812 3456 789", "password": "salah-sekali-1"}, jar{})
+	require.Equal(t, http.StatusUnauthorized, rec.Code)
+	code, msg := errCode(t, rec)
+	assert.Equal(t, "invalid_credentials", code)
+	assert.Equal(t, "Email atau kata sandi salah.", msg)
+	rec = e.do(http.MethodPost, "/login", map[string]any{"identifier": "081299990000", "password": pw}, jar{})
+	require.Equal(t, http.StatusUnauthorized, rec.Code)
+	code2, msg2 := errCode(t, rec)
+	assert.Equal(t, code, code2)
+	assert.Equal(t, msg, msg2)
+	assert.Equal(t, 1, e.count(`SELECT count(*) FROM audit_logs WHERE action='login_failed' AND user_id=$1 AND changes->>'identifier'='8123456789' AND changes->>'kind'='phone'`, id))
+	assert.Equal(t, 1, e.count(`SELECT count(*) FROM audit_logs WHERE action='login_failed' AND user_id IS NULL AND changes->>'identifier'='81299990000'`))
+}
+
+func TestLoginIdentifierAndEmailAlias(t *testing.T) {
+	e := newEnv(t)
+	id, email, pw := testdb.SuperAdmin(t, e.pool)
+	// identifier with email.
+	rec := e.do(http.MethodPost, "/login", map[string]any{"identifier": " ADMIN@Test.Local ", "password": pw}, jar{})
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	// Deprecated alias.
+	rec = e.do(http.MethodPost, "/login", map[string]any{"email": email, "password": pw}, jar{})
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	// identifier wins over email when non-empty.
+	rec = e.do(http.MethodPost, "/login", map[string]any{"identifier": "nobody@test.local", "email": email, "password": pw}, jar{})
+	require.Equal(t, http.StatusUnauthorized, rec.Code)
+	// Empty identifier falls back to email.
+	rec = e.do(http.MethodPost, "/login", map[string]any{"identifier": "", "email": email, "password": pw}, jar{})
+	require.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, 3, e.count("SELECT count(*) FROM audit_logs WHERE action='login' AND user_id=$1", id))
+}
+
+func TestLoginRateLimitKeyedByNormalizedPhone(t *testing.T) {
+	e := newEnv(t)
+	const pw = "Rahasia-Telepon-1"
+	testdb.CreateUser(t, e.pool, testdb.UserOpts{Phone: "8123456789", Password: pw, CanLogin: true, IsActive: true})
+	forms := []string{"0812-3456-789", "+62 812 3456 789", "628123456789", "8123456789", "08123456789"}
+	for _, f := range forms {
+		rec := e.do(http.MethodPost, "/login", map[string]any{"identifier": f, "password": "salah-sekali-1"}, jar{})
+		require.Equal(t, http.StatusUnauthorized, rec.Code, f)
+	}
+	// All spellings share one bucket.
+	rec := e.do(http.MethodPost, "/login", map[string]any{"identifier": "+628123456789", "password": pw}, jar{})
+	assert.Equal(t, http.StatusTooManyRequests, rec.Code)
 }
 
 func TestLoginRateLimited(t *testing.T) {
@@ -375,6 +457,95 @@ func TestChangePasswordRevokesOtherSessions(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 	_, rec = e.login(email, "Baru-Sekali-123")
 	assert.Equal(t, http.StatusOK, rec.Code)
+}
+
+type recordingInvalidator struct {
+	mu  sync.Mutex
+	ids []int64
+}
+
+func (r *recordingInvalidator) Invalidate(id int64) {
+	r.mu.Lock()
+	r.ids = append(r.ids, id)
+	r.mu.Unlock()
+}
+
+func TestChangePasswordForced(t *testing.T) {
+	e := newEnv(t)
+	inv := &recordingInvalidator{}
+	e.svc.WithInvalidator(inv)
+	const email, initial = "baru@test.local", "12345678"
+	id := testdb.CreateUser(t, e.pool, testdb.UserOpts{
+		Email: email, Password: initial, DisplayName: "Pengguna Baru",
+		CanLogin: true, IsActive: true, MustChangePassword: true, Roles: []string{"admin"},
+	})
+	pv := func() int32 {
+		var v int32
+		require.NoError(t, e.pool.QueryRow(context.Background(), "SELECT perm_version FROM users WHERE id=$1", id).Scan(&v))
+		return v
+	}
+	pv0 := pv()
+
+	j1, rec := e.login(email, initial)
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	var body struct {
+		Data struct{ User Me } `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+	assert.True(t, body.Data.User.MustChangePassword)
+	j2, _ := e.login(email, initial)
+
+	// Allowed while flagged: me, sessions, refresh.
+	rec = e.do(http.MethodGet, "/me", nil, j1)
+	require.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Body.String(), `"must_change_password":true`)
+	assert.Equal(t, http.StatusOK, e.do(http.MethodGet, "/sessions", nil, j1).Code)
+	assert.Equal(t, http.StatusOK, e.do(http.MethodPost, "/refresh", nil, j1).Code)
+
+	// Profile edits are blocked.
+	rec = e.do(http.MethodPut, "/me", map[string]any{"display_name": "Nama"}, j1)
+	require.Equal(t, http.StatusForbidden, rec.Code, rec.Body.String())
+	code, msg := errCode(t, rec)
+	assert.Equal(t, "password_change_required", code)
+	assert.Equal(t, "Anda wajib mengganti kata sandi terlebih dahulu.", msg)
+
+	// Same as current → 422 new_password; too short → 422.
+	rec = e.do(http.MethodPut, "/me/password", map[string]any{"current_password": initial, "new_password": initial}, j1)
+	require.Equal(t, http.StatusUnprocessableEntity, rec.Code, rec.Body.String())
+	assert.Contains(t, rec.Body.String(), "new_password", "8-char initial is below the new-password minimum")
+	rec = e.do(http.MethodPut, "/me/password", map[string]any{"current_password": initial, "new_password": "pendek"}, j1)
+	require.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+	rec = e.do(http.MethodPut, "/me/password", map[string]any{"current_password": "Kata-Sandi-Salah-1", "new_password": "Kata-Sandi-Salah-1"}, j1)
+	require.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+	assert.Contains(t, rec.Body.String(), "current_password")
+	assert.Empty(t, inv.ids)
+
+	// Reset the user's password to a 10+ char one so "same as current" can
+	// pass the length validator.
+	_, err := e.pool.Exec(context.Background(), "UPDATE users SET password_hash=$1 WHERE id=$2", testdb.HashPassword(t, "Awal-Sandi-123"), id)
+	require.NoError(t, err)
+	rec = e.do(http.MethodPut, "/me/password", map[string]any{"current_password": "Awal-Sandi-123", "new_password": "Awal-Sandi-123"}, j1)
+	require.Equal(t, http.StatusUnprocessableEntity, rec.Code, rec.Body.String())
+	assert.Contains(t, rec.Body.String(), "Kata sandi baru harus berbeda dari kata sandi saat ini.")
+	assert.Contains(t, rec.Body.String(), "new_password")
+
+	rec = e.do(http.MethodPut, "/me/password", map[string]any{"current_password": "Awal-Sandi-123", "new_password": "Sandi-Baru-Kuat-9"}, j1)
+	require.Equal(t, http.StatusNoContent, rec.Code, rec.Body.String())
+	assert.Equal(t, []int64{id}, inv.ids)
+	assert.Equal(t, pv0+1, pv())
+	assert.Equal(t, 0, e.count("SELECT count(*) FROM users WHERE id=$1 AND must_change_password", id))
+	assert.Equal(t, 1, e.count(`SELECT count(*) FROM audit_logs WHERE action='password_change' AND user_id=$1 AND (changes->>'forced')::boolean AND (changes->>'revoked_tokens')::int = 1`, id))
+
+	assert.Equal(t, http.StatusUnauthorized, e.do(http.MethodPost, "/refresh", nil, j2).Code, "other session revoked")
+	rec = e.do(http.MethodPost, "/refresh", nil, j1)
+	require.Equal(t, http.StatusOK, rec.Code, "current session kept")
+	p, err := e.svc.issuer.Verify(j1[CookieAccess])
+	require.NoError(t, err)
+	assert.Equal(t, pv0+1, p.PermVersion, "refreshed token carries the new perm_version")
+	assert.Contains(t, rec.Body.String(), `"must_change_password":false`)
+
+	rec = e.do(http.MethodPut, "/me", map[string]any{"display_name": "Nama Baru"}, j1)
+	assert.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
 }
 
 func TestSessionsListAndRevoke(t *testing.T) {

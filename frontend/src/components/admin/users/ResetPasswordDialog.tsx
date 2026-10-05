@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/shadcn/button';
+import { Checkbox } from '@/components/ui/shadcn/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,10 @@ import { applyServerErrors } from '@/lib/forms/serverErrors';
 import { password } from '@/lib/forms/schemas';
 import { useZodForm } from '@/lib/forms/useZodForm';
 
-const schema = z.object({ new_password: password });
+const schema = z.object({
+  new_password: password,
+  must_change_password: z.boolean(),
+});
 
 export function ResetPasswordDialog({
   open,
@@ -41,10 +45,12 @@ export function ResetPasswordDialog({
   user: UserItem | null;
 }) {
   const reset = useResetUserPassword();
-  const form = useZodForm(schema, { defaultValues: { new_password: '' } });
+  const form = useZodForm(schema, {
+    defaultValues: { new_password: '', must_change_password: true },
+  });
 
   useEffect(() => {
-    if (open) form.reset({ new_password: '' });
+    if (open) form.reset({ new_password: '', must_change_password: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user]);
 
@@ -53,7 +59,10 @@ export function ResetPasswordDialog({
     try {
       await reset.mutateAsync({
         id: user.id,
-        newPassword: values.new_password,
+        input: {
+          new_password: values.new_password,
+          must_change_password: values.must_change_password,
+        },
       });
       toast.success(`Kata sandi ${user.display_name} direset.`);
       onOpenChange(false);
@@ -100,6 +109,30 @@ export function ResetPasswordDialog({
                   />
                   <FieldDescription>Minimal 10 karakter.</FieldDescription>
                   <FieldError errors={[fieldState.error]} />
+                </Field>
+              )}
+            />
+            <Controller
+              control={form.control}
+              name="must_change_password"
+              render={({ field }) => (
+                <Field
+                  orientation="horizontal"
+                  className="min-h-11 items-center gap-3"
+                >
+                  <Checkbox
+                    id="reset-must-change"
+                    className="size-5"
+                    checked={field.value}
+                    onCheckedChange={(v) => field.onChange(v === true)}
+                    onBlur={field.onBlur}
+                  />
+                  <FieldLabel
+                    htmlFor="reset-must-change"
+                    className="min-h-11 flex-1 items-center font-normal"
+                  >
+                    Wajib ganti kata sandi saat login pertama
+                  </FieldLabel>
                 </Field>
               )}
             />

@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 
 	"portal-berita/backend/internal/apperr"
 	"portal-berita/backend/internal/dbgen"
+	"portal-berita/backend/internal/phone"
 	"portal-berita/backend/internal/rbac"
 )
 
@@ -70,6 +72,76 @@ func autoSlug(ctx context.Context, q *dbgen.Queries, base string, excludeID int6
 		}
 	}
 	return "", apperr.Conflict("Tidak dapat membuat slug unik untuk nama ini.")
+}
+
+const (
+	msgPhoneInvalid  = "Format nomor HP tidak valid. Contoh: 0821xxxxxxxx."
+	msgPhoneTaken    = "Nomor HP sudah terdaftar."
+	msgNeedIdentity  = "Isi email atau nomor HP untuk pengguna dengan akses login."
+	numericQueryExpr = `^\+?[0-9][0-9 .()-]*$`
+)
+
+var numericQuery = regexp.MustCompile(numericQueryExpr)
+
+// normalizePhone parses a client-supplied phone into its stored form,
+// erroring 422 phone when it is not a valid Indonesian mobile number.
+func normalizePhone(raw string) (string, error) {
+	n, ok := phone.Normalize(raw)
+	if !ok {
+		return "", apperr.Validation(map[string]string{"phone": msgPhoneInvalid})
+	}
+	return n, nil
+}
+
+// optString trims s and returns nil for a nil or blank value.
+func optString(s *string) *string {
+	if s == nil {
+		return nil
+	}
+	t := strings.TrimSpace(*s)
+	if t == "" {
+		return nil
+	}
+	return &t
+}
+
+// optPhone normalizes an optional phone: nil/blank -> nil, invalid -> 422.
+func optPhone(s *string) (*string, error) {
+	s = optString(s)
+	if s == nil {
+		return nil, nil
+	}
+	n, err := normalizePhone(*s)
+	if err != nil {
+		return nil, err
+	}
+	return &n, nil
+}
+
+// searchTerm rewrites a numeric-looking list query to the stored phone form
+// (no +62 / 62 / 0 prefix) so "0821", "+62 821" and "62821" all match.
+func searchTerm(q string) string {
+	if !numericQuery.MatchString(q) {
+		return q
+	}
+	var b strings.Builder
+	for _, r := range q {
+		if r == '+' || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+		}
+	}
+	d := b.String()
+	for _, p := range []string{"+62", "62", "0"} {
+		if strings.HasPrefix(d, p) {
+			d = strings.TrimPrefix(d, p)
+			break
+		}
+	}
+	d = strings.TrimPrefix(d, "+")
+	if d == "" {
+		return q
+	}
+	return d
 }
 
 // authorsOnly reports whether the actor may only manage can_login=false
@@ -153,6 +225,8 @@ func uniqueViolationErr(constraint string) error {
 	switch constraint {
 	case "users_email_key":
 		return apperr.Validation(map[string]string{"email": "Email sudah terdaftar."})
+	case "users_phone_key":
+		return apperr.Validation(map[string]string{"phone": msgPhoneTaken})
 	case "users_slug_key":
 		return apperr.Validation(map[string]string{"slug": "Slug sudah dipakai."})
 	default:

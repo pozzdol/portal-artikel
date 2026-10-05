@@ -19,6 +19,7 @@ import {
 import type {
   AuthorOption,
   CreateUserInput,
+  ResetPasswordInput,
   UpdateUserInput,
   UserDetail,
   UserItem,
@@ -37,10 +38,8 @@ export const usersApi = {
   update: (id: number, input: UpdateUserInput) =>
     putData<UserDetail>(`/admin/users/${id}`, input),
   /** 204; revokes all sessions of the target. */
-  resetPassword: (id: number, newPassword: string) =>
-    postData<void>(`/admin/users/${id}/reset-password`, {
-      new_password: newPassword,
-    }),
+  resetPassword: (id: number, input: ResetPasswordInput) =>
+    postData<void>(`/admin/users/${id}/reset-password`, input),
   activate: (id: number) => postData<void>(`/admin/users/${id}/activate`),
   deactivate: (id: number) => postData<void>(`/admin/users/${id}/deactivate`),
   /** Author dropdown (articles.create). Plain array. */
@@ -112,8 +111,8 @@ export function useUpdateUser() {
 
 export function useResetUserPassword() {
   return useMutation({
-    mutationFn: (vars: { id: number; newPassword: string }) =>
-      usersApi.resetPassword(vars.id, vars.newPassword),
+    mutationFn: (vars: { id: number; input: ResetPasswordInput }) =>
+      usersApi.resetPassword(vars.id, vars.input),
   });
 }
 

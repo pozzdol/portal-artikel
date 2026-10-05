@@ -37,6 +37,7 @@ Kontrak ini dijadikan acuan bersama backend dan frontend. Tipe TypeScript di
 | 401 | `invalid_credentials` | Email atau kata sandi salah (login) |
 | 403 | `forbidden` | Tidak punya permission |
 | 403 | `csrf_failed` | Header CSRF tidak cocok |
+| 403 | `password_change_required` | User wajib mengganti kata sandi sebelum akses dasbor (hanya `/admin/*` dan PUT `/auth/me/password`) |
 | 404 | `not_found` | |
 | 409 | `conflict` | Slug duplikat, entitas masih dipakai |
 | 413 | `payload_too_large` | Upload melebihi batas (>5 MB) |
@@ -159,14 +160,16 @@ Jika data sebuah section kosong (misal belum ada event), section tetap dikirim d
 
 | Method | Path | Body | CSRF | Keterangan |
 |---|---|---|---|---|
-| POST | `/auth/login` | `{email, password, remember}` | ✗ | Set cookie `access_token`, `refresh_token`, `csrf_token` (Max-Age = sisa sesi 7d/30d). Respons: `{data: {user}}` dengan `roles[]` dan `permissions[]` |
+| POST | `/auth/login` | `{identifier, password, remember}` | ✗ | `identifier` = email atau nomor HP (normalized); field `email` diterima sebagai alias (deprecated) untuk backward compatibility. Berisi '@' atau format valid nomor HP → akun diingat sebagai email/phone. Set cookie `access_token`, `refresh_token`, `csrf_token` (Max-Age = sisa sesi 7d/30d). Respons: `{data: {user}}` dengan `roles[]`, `permissions[]`, `phone`, `must_change_password` |
 | POST | `/auth/refresh` | — | ✗ | Rotasi token, set cookie baru. Refresh tidak pernah return `token_expired` |
 | POST | `/auth/logout` | — | ✓ | Cabut sesi, hapus cookie |
-| GET | `/auth/me` | — | ✗ | User login + `roles` + `permissions[]` (untuk UI admin menyembunyikan menu) |
-| PUT | `/auth/me` | profil | ✓ | Ubah profil sendiri (display_name, title, bio, avatar) |
-| PUT | `/auth/me/password` | `{current_password, new_password}` | ✓ | Verifikasi current password (422 field jika salah), lalu mencabut semua sesi lain |
+| GET | `/auth/me` | — | ✗ | User login + `roles` + `permissions[]` (untuk UI admin menyembunyikan menu) + `phone`, `must_change_password` |
+| PUT | `/auth/me` | profil | ✓ | Ubah profil sendiri (display_name, title, bio, avatar). Return 403 `password_change_required` jika `must_change_password=true` |
+| PUT | `/auth/me/password` | `{current_password, new_password}` | ✓ | Verifikasi current password (422 field jika salah atau sama dengan yang baru). Pada sukses: hash, set `must_change_password=false`, bump `perm_version`, cabut semua sesi lain. Caller akan menerima 401 `token_expired` sekali pada request berikutnya |
 | GET | `/auth/sessions` | — | ✗ | Sesi aktif milik user |
 | DELETE | `/auth/sessions/{family_id}` | — | ✓ | Cabut sesi tertentu |
+
+**Catatan:** Jika user `must_change_password=true`, endpoint yang **diizinkan** adalah: login, refresh, logout, GET /auth/me, GET/DELETE /auth/sessions, dan PUT /auth/me/password. Request ke endpoint lain (termasuk seluruh `/admin/*`) akan return **403 password_change_required**.
 
 **Keterangan cookie dan session:**
 - Access token: JWT valid 15 menit; cookie Max-Age = sisa lifetime sesi (7 hari standar, 30 hari dengan `remember=true`)
@@ -280,16 +283,16 @@ CRUD standar dengan pola yang sama:
 | GET | `/authors` | `articles.create` | Daftar pilihan penulis (id, display_name, title) untuk dropdown |
 | GET/POST | `/users` | `users.manage` (atau `authors.manage` bila `can_login=false`) | POST: soft delete via `is_active=false`, bukan DELETE; lihat rules di bawah |
 | GET/PUT | `/users/{id}` | idem | |
-| POST | `/users/{id}/reset-password` | `users.manage` | `{new_password}`: target harus `can_login=true`, set hash, cabut semua sesi |
+| POST | `/users/{id}/reset-password` | `users.manage` | `{new_password, must_change_password?=true}`: target harus `can_login=true`, set hash, set flag, bump perm_version, cabut semua sesi |
 | POST | `/users/{id}/deactivate` · `/activate` | `users.manage` | Menolak menonaktifkan super admin terakhir; deactivate cabut semua sesi target |
 | GET | `/roles` | `roles.manage` | Role + permissions |
 | POST/PUT/DELETE | `/roles/{id}` | `roles.manage` | POST body: `{code regex ^[a-z][a-z0-9_]*$, name, description?, permission_codes[]}`. Code immutable. DELETE: role `is_system` → 409, role masih dipakai → 409 |
 | GET | `/permissions` | `roles.manage` | |
 | GET | `/audit-logs` | `audit.view` | Filter: `?entity_type=&action=&user_id=&from=RFC3339/YYYY-MM-DD&to=RFC3339/YYYY-MM-DD&page=&per_page=` (default 20, max 100). Date range in WIB; date-only `to` covers whole day |
 
-**POST /users body:** `{email?, password?, display_name required, slug?, title?, bio?, avatar_media_id?, can_login bool, is_active?, role_ids[]}`. Create login user: email & password required. Convert author→login: requires password + email. 422 if duplicate email/slug, if unknown role_ids, if bad slug regex. 403 if `authors.manage` actor tries login fields. 409 if self-role/status/deactivate, if last active super admin would be deactivated.
+**POST /users body:** `{email?, phone?, password?, display_name required, slug?, title?, bio?, avatar_media_id?, can_login bool, is_active?, must_change_password? bool, role_ids[]}`. Create login user: (email OR phone) & password required. Convert author→login: requires password + (email OR phone). `must_change_password` default `true` saat admin menyediakan password. 422 if duplicate email/phone/slug, if unknown role_ids, if bad slug regex, if bad phone format, if login user tanpa email/phone. 403 if `authors.manage` actor tries login/phone fields. 409 if self-role/status/deactivate, if last active super admin would be deactivated. Converting to author clears phone.
 
-**PUT /users/{id} body:** same as POST, fields optional. Update own role/is_active/can_login → 409. Change permissions bumps user's `perm_version` (forces token_expired on next request).
+**PUT /users/{id} body:** same as POST, fields optional. `phone` dapat diupdate (dengan normalisasi). Update own role/is_active/can_login → 409. Change permissions bumps user's `perm_version` (forces token_expired on next request).
 
 **Audit actions:** login, login_failed, logout, refresh_reuse, password_change, reset_password, session_revoke, create, update, delete, activate, deactivate. Auth events use entity_type="user".
 

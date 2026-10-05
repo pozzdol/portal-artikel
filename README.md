@@ -98,7 +98,7 @@ curl -si -b "$COOKIES" localhost:8080/api/v1/auth/me
 
 ## CLI `tool`
 
-Semua operasi (migrasi, seed, superadmin) melalui satu binary:
+Semua operasi (migrasi, seed, superadmin, user) melalui satu binary:
 
 ```bash
 cd backend
@@ -106,7 +106,36 @@ go run ./cmd/tool help
 go run ./cmd/tool migrate status
 go run ./cmd/tool seed --base --demo
 go run ./cmd/tool create-superadmin --email admin@almaidah.id --name "Administrator"
+
+# Buat pengguna baru dengan email dan password yang diminta interaktif
+go run ./cmd/tool create-user --email user@example.com --name "User Name" --role admin
+
+# Atau dengan nomor HP (format: 0821…, 62…, atau +62…)
+go run ./cmd/tool create-user --phone 0821234567 --name "User Name" --role admin
+
+# Password dari environment variable (untuk automation)
+export NEW_USER_PASSWORD="passwordhere"
+go run ./cmd/tool create-user --email user@example.com --name "User Name" --role admin --password-env NEW_USER_PASSWORD
+
+# Password dari stdin (aman, prompt tersembunyi)
+go run ./cmd/tool create-user --email user@example.com --name "User Name" --role admin --password-stdin
+
+# Tandai user harus ganti password pada login pertama
+go run ./cmd/tool create-user --email user@example.com --name "User Name" --role admin --must-change --password-stdin
+
+# Update user yang sudah ada (update hash, flag, dan role)
+go run ./cmd/tool create-user --email user@example.com --name "User Name" --role admin --update --password-stdin
 ```
+
+Opsi `tool create-user`:
+- `--email E` atau `--phone P` (minimal satu, boleh keduanya)
+- `--name N` (wajib)
+- `--role admin` (wajib; role harus ada di database)
+- `--must-change` (opsional; set flag untuk wajib ganti password)
+- `--password-env VAR` atau `--password-stdin` (wajib; password tidak boleh di argv)
+- `--update` (opsional; update jika sudah ada; default error jika duplikat)
+
+Validasi password: min 10 karakter (atau 8 jika `--must-change`), max 128. Jika tidak ada opsi password, sistem meminta input dua kali (tersembunyi).
 
 `tool` membaca konfigurasi dari `backend/.env` (atau file yang ditunjuk `ENV_FILE`).
 Variabel yang sudah ada di environment proses menang atas isi file.

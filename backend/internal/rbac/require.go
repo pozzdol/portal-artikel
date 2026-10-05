@@ -11,7 +11,8 @@ import (
 // RequirePermission returns a middleware that lets the request through when
 // the authenticated principal holds ANY of codes. It responds 401 when there
 // is no principal or the user is inactive/cannot log in, 401 token_expired
-// when the token's perm version is outdated, and 403 when none of codes is
+// when the token's perm version is outdated, 403 password_change_required when
+// the user must change the initial password, and 403 when none of codes is
 // granted. The effective permission set is stored via WithPermissions.
 // It panics if codes is empty.
 func RequirePermission(c *Checker, codes ...string) func(http.Handler) http.Handler {

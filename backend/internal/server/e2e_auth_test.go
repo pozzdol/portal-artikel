@@ -420,3 +420,96 @@ func TestE2EAuth(t *testing.T) {
 		assert.NotNil(t, res.data()["user"])
 	})
 }
+
+func (c *client) loginIdentifier(identifier, password string) result {
+	c.t.Helper()
+	return c.do(http.MethodPost, "/api/v1/auth/login", map[string]any{"identifier": identifier, "password": password}, false)
+}
+
+func TestE2EForcedPasswordChange(t *testing.T) {
+	pool := testdb.New(t)
+	srv := e2eServer(t, pool, 0)
+	ctx := context.Background()
+	const initial = "82110099"
+	id := testdb.CreateUser(t, pool, testdb.UserOpts{
+		Phone: "8211009988", Password: initial, DisplayName: "Admin Baru",
+		CanLogin: true, IsActive: true, MustChangePassword: true, Roles: []string{rbac.RoleAdmin},
+	})
+	var pv0 int32
+	require.NoError(t, pool.QueryRow(ctx, "SELECT perm_version FROM users WHERE id=$1", id).Scan(&pv0))
+
+	c := newClient(t, srv)
+	res := c.loginIdentifier("0821-1009-988", initial)
+	require.Equal(t, http.StatusOK, res.Status, res.Body)
+	user, _ := res.data()["user"].(map[string]any)
+	assert.Equal(t, true, user["must_change_password"])
+	assert.Equal(t, "8211009988", user["phone"])
+	assert.Nil(t, user["email"])
+
+	other := newClient(t, srv)
+	require.Equal(t, http.StatusOK, other.loginIdentifier("+62 821 1009 988", initial).Status)
+
+	res = c.do(http.MethodGet, "/api/v1/auth/me", nil, false)
+	require.Equal(t, http.StatusOK, res.Status, res.Body)
+	assert.Equal(t, true, res.data()["must_change_password"])
+
+	for _, path := range []string{"/api/v1/admin/users", "/api/v1/admin/articles", "/api/v1/admin/dashboard"} {
+		res = c.do(http.MethodGet, path, nil, false)
+		assert.Equal(t, http.StatusForbidden, res.Status, path)
+		assert.Equal(t, "password_change_required", res.errCode(), path)
+	}
+	res = c.do(http.MethodPut, "/api/v1/auth/me", map[string]any{"display_name": "X"}, true)
+	assert.Equal(t, http.StatusForbidden, res.Status)
+	assert.Equal(t, "password_change_required", res.errCode())
+	assert.Equal(t, "Anda wajib mengganti kata sandi terlebih dahulu.", res.errMessage())
+	res = c.do(http.MethodGet, "/api/v1/auth/sessions", nil, false)
+	assert.Equal(t, http.StatusOK, res.Status)
+
+	// Refresh keeps working while flagged.
+	res = c.do(http.MethodPost, "/api/v1/auth/refresh", nil, false)
+	require.Equal(t, http.StatusOK, res.Status, res.Body)
+	res = c.do(http.MethodGet, "/api/v1/admin/users", nil, false)
+	assert.Equal(t, "password_change_required", res.errCode())
+
+	res = c.do(http.MethodPut, "/api/v1/auth/me/password", map[string]any{"current_password": initial, "new_password": "pendek"}, true)
+	assert.Equal(t, http.StatusUnprocessableEntity, res.Status)
+
+	// Make "same as current" reachable past the 10-char minimum.
+	const current = "Sandi-Awal-12345"
+	_, err := pool.Exec(ctx, "UPDATE users SET password_hash=$1 WHERE id=$2", testdb.HashPassword(t, current), id)
+	require.NoError(t, err)
+	res = c.do(http.MethodPut, "/api/v1/auth/me/password", map[string]any{"current_password": current, "new_password": current}, true)
+	require.Equal(t, http.StatusUnprocessableEntity, res.Status, res.Body)
+	fields, _ := res.Body["error"].(map[string]any)["fields"].(map[string]any)
+	assert.Equal(t, "Kata sandi baru harus berbeda dari kata sandi saat ini.", fields["new_password"])
+
+	res = c.do(http.MethodPut, "/api/v1/auth/me/password", map[string]any{"current_password": current, "new_password": "Sandi-Baru-Kuat-9"}, true)
+	require.Equal(t, http.StatusNoContent, res.Status, res.Body)
+
+	var flagged bool
+	var pv1 int32
+	require.NoError(t, pool.QueryRow(ctx, "SELECT must_change_password, perm_version FROM users WHERE id=$1", id).Scan(&flagged, &pv1))
+	assert.False(t, flagged)
+	assert.Equal(t, pv0+1, pv1)
+
+	// Other session is gone; current one refreshes.
+	res = other.do(http.MethodPost, "/api/v1/auth/refresh", nil, false)
+	assert.Equal(t, http.StatusUnauthorized, res.Status)
+
+	// Current access token is stale: token_expired once, refresh, then 200.
+	res = c.do(http.MethodGet, "/api/v1/admin/users", nil, false)
+	assert.Equal(t, http.StatusUnauthorized, res.Status)
+	assert.Equal(t, "token_expired", res.errCode())
+	res = c.do(http.MethodPost, "/api/v1/auth/refresh", nil, false)
+	require.Equal(t, http.StatusOK, res.Status, res.Body)
+	user, _ = res.data()["user"].(map[string]any)
+	assert.Equal(t, false, user["must_change_password"])
+	res = c.do(http.MethodGet, "/api/v1/admin/users", nil, false)
+	assert.Equal(t, http.StatusOK, res.Status, res.Body)
+	res = c.do(http.MethodPut, "/api/v1/auth/me", map[string]any{"display_name": "Admin Baru Sekali"}, true)
+	assert.Equal(t, http.StatusOK, res.Status, res.Body)
+
+	// New password works for phone and old one does not.
+	require.Equal(t, http.StatusUnauthorized, newClient(t, srv).loginIdentifier("08211009988", current).Status)
+	require.Equal(t, http.StatusOK, newClient(t, srv).loginIdentifier("628211009988", "Sandi-Baru-Kuat-9").Status)
+}

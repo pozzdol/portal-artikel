@@ -174,12 +174,13 @@ func Exec(t *testing.T, pool *pgxpool.Pool, sql string, args ...any) {
 }
 
 // UserOpts describes a user to create. Empty Slug derives one from
-// DisplayName; empty DisplayName defaults to "Pengguna Uji". Password is only
-// stored when non-empty. Roles are role codes (e.g. "super_admin").
+// DisplayName; empty DisplayName defaults to "Pengguna Uji". Email, Phone and
+// Password are only stored when non-empty; Phone must already be normalized
+// (e.g. "8123456789"). Roles are role codes (e.g. "super_admin").
 type UserOpts struct {
-	Email, Password, DisplayName, Slug string
-	CanLogin, IsActive                 bool
-	Roles                              []string
+	Email, Phone, Password, DisplayName, Slug string
+	CanLogin, IsActive, MustChangePassword    bool
+	Roles                                     []string
 }
 
 // CreateUser inserts a user (and its roles) and returns its id.
@@ -192,9 +193,12 @@ func CreateUser(t *testing.T, pool *pgxpool.Pool, o UserOpts) int64 {
 	if o.Slug == "" {
 		o.Slug = slugify(o.DisplayName) + "-" + randHex(t, 3)
 	}
-	var email, hash *string
+	var email, phone, hash *string
 	if o.Email != "" {
 		email = &o.Email
+	}
+	if o.Phone != "" {
+		phone = &o.Phone
 	}
 	if o.Password != "" {
 		h := HashPassword(t, o.Password)
@@ -202,12 +206,14 @@ func CreateUser(t *testing.T, pool *pgxpool.Pool, o UserOpts) int64 {
 	}
 	q := dbgen.New(pool)
 	u, err := q.CreateUser(ctx, dbgen.CreateUserParams{
-		Email:        email,
-		PasswordHash: hash,
-		DisplayName:  o.DisplayName,
-		Slug:         o.Slug,
-		CanLogin:     o.CanLogin,
-		IsActive:     o.IsActive,
+		Email:              email,
+		Phone:              phone,
+		PasswordHash:       hash,
+		DisplayName:        o.DisplayName,
+		Slug:               o.Slug,
+		CanLogin:           o.CanLogin,
+		IsActive:           o.IsActive,
+		MustChangePassword: o.MustChangePassword,
 	})
 	if err != nil {
 		t.Fatalf("testdb: create user %q: %v", o.DisplayName, err)

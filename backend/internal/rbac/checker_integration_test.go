@@ -73,3 +73,17 @@ func TestCheckerDB(t *testing.T) {
 	c.Invalidate(id)
 	assert.Equal(t, http.StatusUnauthorized, do(p))
 }
+
+func TestCheckerDBMustChangePassword(t *testing.T) {
+	pool := testdb.New(t)
+	ctx := context.Background()
+	id, _, _ := testdb.SuperAdmin(t, pool)
+	_, err := pool.Exec(ctx, "UPDATE users SET must_change_password = true WHERE id=$1", id)
+	require.NoError(t, err)
+	var pv int32
+	require.NoError(t, pool.QueryRow(ctx, "SELECT perm_version FROM users WHERE id=$1", id).Scan(&pv))
+
+	c := rbac.NewChecker(pool, time.Minute)
+	_, err = c.Access(ctx, authctx.Principal{UserID: id, PermVersion: pv})
+	assert.ErrorIs(t, err, apperr.ErrPasswordChangeRequired)
+}

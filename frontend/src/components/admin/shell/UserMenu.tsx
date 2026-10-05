@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/shadcn/dropdown-menu';
 import { useLogout, useMe } from '@/lib/api/admin/auth';
 import { useMediaByIds } from '@/lib/api/admin/media';
+import { formatPhone } from '@/lib/phone';
 import { setTheme, useIsDark } from '@/lib/theme';
 
 import { beginSignOut } from './AdminGate';
@@ -91,9 +92,9 @@ export function UserMenu() {
           <span className="text-foreground truncate text-sm font-medium">
             {me?.display_name}
           </span>
-          {me?.email ? (
+          {me?.email || me?.phone ? (
             <span className="text-muted-foreground truncate text-xs">
-              {me.email}
+              {me.email ?? formatPhone(me.phone)}
             </span>
           ) : null}
           {me?.roles.length ? (

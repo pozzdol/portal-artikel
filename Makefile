@@ -22,7 +22,7 @@ TOOL := go run ./cmd/tool
 
 .PHONY: help tools dev-api dev-web \
 	migrate-up migrate-down migrate-status migrate-reset \
-	sqlc seed seed-base seed-demo create-superadmin \
+	sqlc seed seed-base seed-demo create-superadmin create-user \
 	lint test test-integration vuln build
 
 help: ## Show available targets
@@ -66,6 +66,14 @@ seed-demo: ## Seed demo content only
 create-superadmin: ## Create/update superadmin: make create-superadmin EMAIL=... NAME="..."
 	@test -n "$(EMAIL)" || { echo "EMAIL is required, e.g. make create-superadmin EMAIL=admin@almaidah.id NAME=\"Administrator\""; exit 2; }
 	cd backend && $(TOOL) create-superadmin --email "$(EMAIL)" --name "$(NAME)"
+
+create-user: ## Create/update a login user: make create-user EMAIL=... | PHONE=0821... NAME="..." [ROLE=admin] [MUST_CHANGE=1] [UPDATE=1] [PASSWORD_ENV=VAR]; password from the env var named by PASSWORD_ENV, else TTY prompt
+	@test -n "$(EMAIL)$(PHONE)" || { echo "EMAIL or PHONE is required, e.g. make create-user PHONE=0821xxxxxxxx NAME=\"Budi\" MUST_CHANGE=1"; exit 2; }
+	cd backend && $(TOOL) create-user \
+		$(if $(EMAIL),--email "$(EMAIL)") $(if $(PHONE),--phone "$(PHONE)") \
+		$(if $(NAME),--name "$(NAME)") --role "$(or $(ROLE),admin)" \
+		$(if $(MUST_CHANGE),--must-change) $(if $(UPDATE),--update) \
+		$(if $(PASSWORD_ENV),--password-env "$(PASSWORD_ENV)")
 
 lint: ## gofmt + go vet + staticcheck + frontend lint
 	cd backend && test -z "$$(gofmt -l .)" || { echo "gofmt needed:"; gofmt -l .; exit 1; }

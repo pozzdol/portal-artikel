@@ -146,6 +146,7 @@ func TestWriteErrorDomainMapping(t *testing.T) {
 		{"token expired", apperr.TokenExpired(), 401, "token_expired", "Sesi telah kedaluwarsa."},
 		{"invalid credentials", apperr.InvalidCredentials(), 401, "invalid_credentials", "Email atau kata sandi salah."},
 		{"forbidden", apperr.Forbidden(""), 403, "forbidden", "Anda tidak memiliki izin untuk tindakan ini."},
+		{"password change required", apperr.PasswordChangeRequired(), 403, "password_change_required", "Anda wajib mengganti kata sandi terlebih dahulu."},
 		{"csrf", apperr.CSRF(), 403, "csrf_failed", "Token CSRF tidak valid."},
 		{"not found", apperr.NotFound(), 404, "not_found", "Data tidak ditemukan."},
 		{"conflict", apperr.Conflict("Minimal satu super admin aktif harus tetap ada."), 409, "conflict", "Minimal satu super admin aktif harus tetap ada."},

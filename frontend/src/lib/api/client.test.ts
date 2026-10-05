@@ -5,6 +5,7 @@ import {
   adminApi,
   ApiClientError,
   buildQuery,
+  PASSWORD_CHANGE_REQUIRED_EVENT,
   request,
   UNAUTHENTICATED_EVENT,
 } from './client';
@@ -20,6 +21,7 @@ const g = globalThis as unknown as {
 const realFetch = g.fetch;
 let calls: Call[] = [];
 let unauthEvents = 0;
+let pwEvents = 0;
 
 function json(
   status: number,
@@ -51,11 +53,15 @@ function installFetch(
 beforeEach(() => {
   calls = [];
   unauthEvents = 0;
+  pwEvents = 0;
   __resetClientStateForTests();
   g.document = { cookie: 'theme=dark; csrf_token=csrf-1' };
   const win = new EventTarget();
   win.addEventListener(UNAUTHENTICATED_EVENT, () => {
     unauthEvents++;
+  });
+  win.addEventListener(PASSWORD_CHANGE_REQUIRED_EVENT, () => {
+    pwEvents++;
   });
   g.window = win;
 });
@@ -320,5 +326,32 @@ describe('token_expired refresh', () => {
     expect(err.code).toBe('token_expired');
     expect(calls).toHaveLength(1);
     expect(unauthEvents).toBe(0);
+  });
+
+  test('403 password_change_required dispatches its event once, without retry', async () => {
+    installFetch(() =>
+      json(403, {
+        error: {
+          code: 'password_change_required',
+          message: 'Anda wajib mengganti kata sandi terlebih dahulu.',
+        },
+      }),
+    );
+    const err = (await adminApi
+      .get('/admin/articles')
+      .catch((e) => e)) as ApiClientError;
+    expect(err.status).toBe(403);
+    expect(err.code).toBe('password_change_required');
+    expect(calls).toHaveLength(1);
+    expect(pwEvents).toBe(1);
+    expect(unauthEvents).toBe(0);
+  });
+
+  test('other 403s do not dispatch the password event', async () => {
+    installFetch(() =>
+      json(403, { error: { code: 'forbidden', message: 'Tidak boleh.' } }),
+    );
+    await adminApi.get('/admin/articles').catch(() => {});
+    expect(pwEvents).toBe(0);
   });
 });

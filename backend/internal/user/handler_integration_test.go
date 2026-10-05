@@ -149,3 +149,39 @@ func itoa(id int64) string {
 	b, _ := json.Marshal(id)
 	return string(b)
 }
+
+func TestHandlerPhoneNullClearAndResetFlag(t *testing.T) {
+	pool := testdb.New(t)
+	svc, _ := newService(pool)
+	h := user.NewHandler(svc)
+	r := chi.NewRouter()
+	adminID, _, _ := testdb.SuperAdmin(t, pool)
+	h.Register(r, fakeGuard(adminID, rbac.NewSet(rbac.PermUsersManage)))
+	srv := httptest.NewServer(r)
+	t.Cleanup(srv.Close)
+
+	resp, body := doJSON(t, http.MethodPost, srv.URL+"/users", map[string]any{
+		"display_name": "Hp Handler", "email": "hp-h@test.local", "phone": "0812-3456-789",
+		"password": "Password-Hp-12345", "can_login": true,
+	})
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+	data := body["data"].(map[string]any)
+	assert.Equal(t, "8123456789", data["phone"])
+	assert.Equal(t, true, data["must_change_password"])
+	id := itoa(int64(data["id"].(float64)))
+
+	resp, body = doJSON(t, http.MethodPut, srv.URL+"/users/"+id, map[string]any{"display_name": "Hp Handler", "email": nil})
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	data = body["data"].(map[string]any)
+	assert.Nil(t, data["email"])
+	assert.Equal(t, "8123456789", data["phone"])
+
+	resp, body = doJSON(t, http.MethodPut, srv.URL+"/users/"+id, map[string]any{"display_name": "Hp Handler", "email": "bukan-email"})
+	assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
+	assert.Contains(t, body["error"].(map[string]any)["fields"], "email")
+
+	resp, _ = doJSON(t, http.MethodPost, srv.URL+"/users/"+id+"/reset-password", map[string]any{
+		"new_password": "Password-Baru-123", "must_change_password": false,
+	})
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+}

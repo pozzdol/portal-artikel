@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Login dengan nomor HP:** field login sekarang menerima email atau nomor HP (normalized format +62...).
+  - New field `phone` di users table (UNIQUE, CHECK format `^8[0-9]{8,11}$`)
+  - New utility `backend/internal/phone` package: `Normalize()`, `Display()`, `E164()` untuk parsing & formatting nomor HP
+  - Login endpoint updates: body `{identifier, password, remember}` (email deprecated, untuk backward compatibility)
+  - PUT /auth/me/password sekarang harus beda dari password lama (422 validation)
+
+- **Forced password change on first login:**
+  - New column `must_change_password` di users table (BOOLEAN, default false)
+  - New error 403 `password_change_required` untuk akses /admin/* saat flag aktif
+  - New page `/admin/ganti-password` untuk wajib ganti sandi
+  - Allowed endpoints while flagged: login, refresh, logout, GET /auth/me, GET/DELETE /auth/sessions, PUT /auth/me/password
+  - On password change: flag reset, perm_version bumped, all other sessions revoked, caller receives 401 token_expired once
+  - Admin CMS users module: checkbox "Wajib ganti kata sandi saat login pertama" (default checked saat create), badge "Wajib ganti sandi" di list
+
+- **CLI tool improvements:**
+  - New command `tool create-user`: create/update users dengan email dan/atau nomor HP
+  - Options: `--email E | --phone P | both`, `--name N`, `--role admin`, `--must-change`, `--password-stdin | --password-env VAR`
+  - Password validation: min 10 (atau 8 jika --must-change), max 128, tidak boleh di argv
+
+### Changed
+- `/auth/login` response sekarang includes `phone` dan `must_change_password` fields
+- `/auth/me` response sekarang includes `phone` dan `must_change_password` fields
+- Users CRUD: `phone` field dengan normalisasi + validation; `must_change_password` parameter pada create/reset-password
+- Reset password endpoint `/users/{id}/reset-password`: baru menerima `{new_password, must_change_password?}`
+- User search sekarang cocok dengan phone (desnormalized) selain email dan display_name
+
+### Fixed
+- Login constraint sekarang memungkinkan login tanpa email asalkan punya phone (dan password)
+
 ## [1.0.0] - 2026-09-27
 
 MVP release: Portal berita ALMAIDAH siap produksi dengan fitur lengkap dan verifikasi keamanan.

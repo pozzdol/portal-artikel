@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+import { CHANGE_PASSWORD_PATH } from '@/components/admin/auth/safe-next';
 import {
   ACCESS_COOKIE,
   fetchServerMe,
@@ -27,6 +28,9 @@ export default async function AdminShellLayout({
     getAdminBrand(),
   ]);
   if (session.status === 'unauthenticated') redirect('/admin/login');
+  if (session.status === 'ok' && session.me.must_change_password) {
+    redirect(CHANGE_PASSWORD_PATH);
+  }
 
   return (
     <AdminShell

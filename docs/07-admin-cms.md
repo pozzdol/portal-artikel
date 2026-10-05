@@ -54,9 +54,20 @@ kecuali shell layout. Halaman admin tidak di-cache, diberi `noindex`, dan diblok
 ## 3. Halaman per halaman
 
 ### 3.1 Login
-- Field email + password, checkbox "Ingat saya" (refresh 30 hari), tombol "Masuk".
-- Error generik: "Email atau kata sandi salah." Untuk 429: "Terlalu banyak percobaan, coba lagi dalam N detik."
-- Jika sudah login, langsung diarahkan ke `/admin`. Mendukung `?next=` untuk kembali ke halaman asal.
+- Field identifier (label "Email atau nomor HP") + password, checkbox "Ingat saya" (refresh 30 hari), tombol "Masuk".
+- Input menerima email atau nomor HP dalam bentuk apa pun (0821…, 62…, atau +62…) — backend menormalkan.
+- Error generik: "Email atau nomor HP tidak valid atau kata sandi salah." Untuk 429: "Terlalu banyak percobaan, coba lagi dalam N detik."
+- Jika sudah login dan `must_change_password=true`, diarahkan ke `/admin/ganti-password`. Jika tidak ada flag, diarahkan ke `/admin`. Mendukung `?next=` untuk kembali ke halaman asal.
+
+### 3.1a Ganti kata sandi wajib (`/admin/ganti-password`)
+- Tampil jika user login dengan `must_change_password=true` atau mencoba akses `/admin/*` dengan flag aktif.
+- Header merek seperti halaman login.
+- Alert peringatan: "Demi keamanan, Anda wajib mengganti kata sandi awal sebelum menggunakan dasbor."
+- Form: password lama (disabled, placeholder contoh), password baru (min 10 karakter, harus berbeda dari password awal), konfirmasi.
+- Helper text: "Minimal 10 karakter dan harus berbeda dari kata sandi awal. Sesi di perangkat lain akan dikeluarkan."
+- Tombol: "Ganti Kata Sandi" (submit), "Keluar" (logout, ghost style).
+- Pada sukses: toast "Kata sandi diperbarui. Selamat datang di dasbor." → refresh session → redirect `/admin`.
+- Redirect rules: tidak ada cookie → `/admin/login?next=/admin/ganti-password`; user sudah login & tidak flagged → `/admin`; user sudah login & flagged → render form.
 
 ### 3.2 Dashboard
 - Kartu statistik: Artikel terbit, Draf, Terjadwal, View 7 hari.
@@ -169,11 +180,13 @@ Tab: **Identitas** (nama, tagline, logo, favicon) · **Footer** (deskripsi, copy
 **Header** (tampilkan tanggal/cari/tema/tombol login, label tombol).
 
 ### 3.12 Pengguna, penulis & role
-- Tabel pengguna: nama tampil, email, role, **Bisa login** (ya/tidak), aktif, login terakhir.
+- Tabel pengguna: nama tampil, email/nomor HP (email ?? phone), role, **Bisa login** (ya/tidak), aktif, login terakhir. Badge "Wajib ganti sandi" jika `must_change_password=true`.
+- Search placeholder: "Cari nama, email, atau nomor HP…"; backend cocok dengan query pada email, phone (setelah didenormalisasi), dan display_name.
 - Filter cepat: "Semua", "Admin (bisa login)", "Penulis saja".
 - **Tambah penulis** (form ringkas): nama tampil, gelar/jabatan, bio, foto. `can_login` otomatis `false`. Tersedia untuk yang punya `authors.manage`.
-- **Tambah pengguna admin** (super_admin): tambahan email, password sementara, dan role.
-- **Ubah penulis menjadi admin:** aktifkan "Bisa login", lalu isi email & password.
+- **Tambah pengguna admin** (super_admin): nama tampil, email (opsional), nomor HP (opsional; label "Nomor HP", placeholder "0821…", description "Disimpan sebagai +62; boleh ditulis 0821…, 62…, atau +62…"), password sementara, role. Validasi: login user wajib punya email OR nomor HP. Checkbox "Wajib ganti kata sandi saat login pertama" (default checked saat create).
+- **Reset password dialog:** password baru (min 10), checkbox "Wajib ganti kata sandi saat login pertama" (default checked).
+- **Ubah penulis menjadi admin:** aktifkan "Bisa login", lalu isi email & password (atau nomor HP, atau keduanya).
 - **Role** (super_admin): list role, matriks checkbox permission per role, buat role baru. Ini jalan menuju role `editor` kelak tanpa perubahan kode.
 - Proteksi: tidak bisa menonaktifkan diri sendiri atau super admin terakhir.
 

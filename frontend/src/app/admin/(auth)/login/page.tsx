@@ -6,7 +6,10 @@ import { redirect } from 'next/navigation';
 import { ArrowLeftIcon } from 'lucide-react';
 
 import { LoginForm } from '@/components/admin/auth/LoginForm';
-import { safeNext } from '@/components/admin/auth/safe-next';
+import {
+  CHANGE_PASSWORD_PATH,
+  safeNext,
+} from '@/components/admin/auth/safe-next';
 import {
   ACCESS_COOKIE,
   fetchServerMe,
@@ -27,7 +30,9 @@ export default async function AdminLoginPage({
   let tryRefresh = false;
   if (store.get(ACCESS_COOKIE)?.value) {
     const session = await fetchServerMe(store.toString());
-    if (session.status === 'ok') redirect(next);
+    if (session.status === 'ok') {
+      redirect(session.me.must_change_password ? CHANGE_PASSWORD_PATH : next);
+    }
     tryRefresh = session.status === 'unknown';
   }
 

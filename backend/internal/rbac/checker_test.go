@@ -244,3 +244,36 @@ func TestRequirePermission(t *testing.T) {
 
 	assert.Panics(t, func() { RequirePermission(c) })
 }
+
+func TestCheckerMustChangePassword(t *testing.T) {
+	l, _, c := setup()
+	ctx := context.Background()
+	l.set(4, Access{IsActive: true, CanLogin: true, PermVersion: 1, MustChangePassword: true, Perms: NewSet(PermUsersManage)})
+	l.set(5, Access{IsActive: false, CanLogin: true, PermVersion: 1, MustChangePassword: true})
+
+	_, err := c.Access(ctx, pr(4, 1))
+	assert.ErrorIs(t, err, apperr.ErrPasswordChangeRequired)
+
+	// Inactive beats the flag; a stale token gets token_expired first.
+	_, err = c.Access(ctx, pr(5, 1))
+	assert.ErrorIs(t, err, apperr.ErrUnauthenticated)
+	_, err = c.Access(ctx, pr(4, 7))
+	assert.ErrorIs(t, err, apperr.ErrTokenExpired)
+
+	// Password changed: flag cleared, pv bumped, cache invalidated.
+	l.set(4, Access{IsActive: true, CanLogin: true, PermVersion: 2, Perms: NewSet(PermUsersManage)})
+	c.Invalidate(4)
+	_, err = c.Access(ctx, pr(4, 1))
+	assert.ErrorIs(t, err, apperr.ErrTokenExpired, "old token must refresh once")
+	a, err := c.Access(ctx, pr(4, 2))
+	require.NoError(t, err)
+	assert.True(t, a.Perms.Has(PermUsersManage))
+
+	// Middleware renders 403 password_change_required.
+	l.set(6, Access{IsActive: true, CanLogin: true, PermVersion: 1, MustChangePassword: true, Perms: NewSet(PermUsersManage)})
+	ok := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	p6 := pr(6, 1)
+	rec, code := serve(t, RequirePermission(c, PermUsersManage)(ok), &p6)
+	assert.Equal(t, http.StatusForbidden, rec.Code)
+	assert.Equal(t, "password_change_required", code)
+}

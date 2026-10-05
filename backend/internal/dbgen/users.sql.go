@@ -49,7 +49,9 @@ func (q *Queries) BumpUserPermVersion(ctx context.Context, id int64) (int32, err
 }
 
 const clearUserCredentials = `-- name: ClearUserCredentials :exec
-UPDATE users SET email = NULL, password_hash = NULL, can_login = false WHERE id = $1
+UPDATE users
+SET email = NULL, phone = NULL, password_hash = NULL, can_login = false, must_change_password = false
+WHERE id = $1
 `
 
 func (q *Queries) ClearUserCredentials(ctx context.Context, id int64) error {
@@ -90,7 +92,8 @@ SELECT count(*)
 FROM users u
 WHERE ($1::text IS NULL
        OR u.display_name ILIKE '%' || $1::text || '%'
-       OR u.email::text ILIKE '%' || $1::text || '%')
+       OR u.email::text ILIKE '%' || $1::text || '%'
+       OR u.phone ILIKE '%' || $1::text || '%')
   AND ($2::boolean IS NULL OR u.can_login = $2::boolean)
   AND ($3::boolean IS NULL OR u.is_active = $3::boolean)
   AND ($4::text IS NULL OR EXISTS (
@@ -118,44 +121,51 @@ func (q *Queries) CountUsersFiltered(ctx context.Context, arg CountUsersFiltered
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, password_hash, display_name, slug, title, bio, avatar_media_id, can_login, is_active)
-VALUES ($1::citext, $2, $3, $4,
-        $5, $6, $7, $8, $9)
-RETURNING id, email, display_name, slug, title, bio, avatar_media_id,
-          can_login, is_active, last_login_at, perm_version, created_at, updated_at
+INSERT INTO users (email, phone, password_hash, display_name, slug, title, bio, avatar_media_id,
+                   can_login, is_active, must_change_password)
+VALUES ($1::citext, $2, $3, $4, $5,
+        $6, $7, $8, $9, $10,
+        $11)
+RETURNING id, email, phone, display_name, slug, title, bio, avatar_media_id,
+          can_login, is_active, must_change_password, last_login_at, perm_version, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Email         *string `json:"email"`
-	PasswordHash  *string `json:"password_hash"`
-	DisplayName   string  `json:"display_name"`
-	Slug          string  `json:"slug"`
-	Title         *string `json:"title"`
-	Bio           *string `json:"bio"`
-	AvatarMediaID *int64  `json:"avatar_media_id"`
-	CanLogin      bool    `json:"can_login"`
-	IsActive      bool    `json:"is_active"`
+	Email              *string `json:"email"`
+	Phone              *string `json:"phone"`
+	PasswordHash       *string `json:"password_hash"`
+	DisplayName        string  `json:"display_name"`
+	Slug               string  `json:"slug"`
+	Title              *string `json:"title"`
+	Bio                *string `json:"bio"`
+	AvatarMediaID      *int64  `json:"avatar_media_id"`
+	CanLogin           bool    `json:"can_login"`
+	IsActive           bool    `json:"is_active"`
+	MustChangePassword bool    `json:"must_change_password"`
 }
 
 type CreateUserRow struct {
-	ID            int64      `json:"id"`
-	Email         *string    `json:"email"`
-	DisplayName   string     `json:"display_name"`
-	Slug          string     `json:"slug"`
-	Title         *string    `json:"title"`
-	Bio           *string    `json:"bio"`
-	AvatarMediaID *int64     `json:"avatar_media_id"`
-	CanLogin      bool       `json:"can_login"`
-	IsActive      bool       `json:"is_active"`
-	LastLoginAt   *time.Time `json:"last_login_at"`
-	PermVersion   int32      `json:"perm_version"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID                 int64      `json:"id"`
+	Email              *string    `json:"email"`
+	Phone              *string    `json:"phone"`
+	DisplayName        string     `json:"display_name"`
+	Slug               string     `json:"slug"`
+	Title              *string    `json:"title"`
+	Bio                *string    `json:"bio"`
+	AvatarMediaID      *int64     `json:"avatar_media_id"`
+	CanLogin           bool       `json:"can_login"`
+	IsActive           bool       `json:"is_active"`
+	MustChangePassword bool       `json:"must_change_password"`
+	LastLoginAt        *time.Time `json:"last_login_at"`
+	PermVersion        int32      `json:"perm_version"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
 	row := q.db.QueryRow(ctx, createUser,
 		arg.Email,
+		arg.Phone,
 		arg.PasswordHash,
 		arg.DisplayName,
 		arg.Slug,
@@ -164,11 +174,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		arg.AvatarMediaID,
 		arg.CanLogin,
 		arg.IsActive,
+		arg.MustChangePassword,
 	)
 	var i CreateUserRow
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
+		&i.Phone,
 		&i.DisplayName,
 		&i.Slug,
 		&i.Title,
@@ -176,6 +188,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		&i.AvatarMediaID,
 		&i.CanLogin,
 		&i.IsActive,
+		&i.MustChangePassword,
 		&i.LastLoginAt,
 		&i.PermVersion,
 		&i.CreatedAt,
@@ -194,35 +207,61 @@ func (q *Queries) DeleteUserRoles(ctx context.Context, userID int64) error {
 }
 
 const getUserAccess = `-- name: GetUserAccess :one
-SELECT is_active, can_login, perm_version FROM users WHERE id = $1
+SELECT is_active, can_login, must_change_password, perm_version FROM users WHERE id = $1
 `
 
 type GetUserAccessRow struct {
-	IsActive    bool  `json:"is_active"`
-	CanLogin    bool  `json:"can_login"`
-	PermVersion int32 `json:"perm_version"`
+	IsActive           bool  `json:"is_active"`
+	CanLogin           bool  `json:"can_login"`
+	MustChangePassword bool  `json:"must_change_password"`
+	PermVersion        int32 `json:"perm_version"`
 }
 
 func (q *Queries) GetUserAccess(ctx context.Context, id int64) (GetUserAccessRow, error) {
 	row := q.db.QueryRow(ctx, getUserAccess, id)
 	var i GetUserAccessRow
-	err := row.Scan(&i.IsActive, &i.CanLogin, &i.PermVersion)
+	err := row.Scan(
+		&i.IsActive,
+		&i.CanLogin,
+		&i.MustChangePassword,
+		&i.PermVersion,
+	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password_hash, display_name, slug, title, bio, avatar_media_id,
-       can_login, is_active, last_login_at, perm_version, created_at, updated_at
+SELECT id, email, phone, password_hash, display_name, slug, title, bio, avatar_media_id,
+       can_login, is_active, must_change_password, last_login_at, perm_version, created_at, updated_at
 FROM users
 WHERE email = $1::citext
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+type GetUserByEmailRow struct {
+	ID                 int64      `json:"id"`
+	Email              *string    `json:"email"`
+	Phone              *string    `json:"phone"`
+	PasswordHash       *string    `json:"password_hash"`
+	DisplayName        string     `json:"display_name"`
+	Slug               string     `json:"slug"`
+	Title              *string    `json:"title"`
+	Bio                *string    `json:"bio"`
+	AvatarMediaID      *int64     `json:"avatar_media_id"`
+	CanLogin           bool       `json:"can_login"`
+	IsActive           bool       `json:"is_active"`
+	MustChangePassword bool       `json:"must_change_password"`
+	LastLoginAt        *time.Time `json:"last_login_at"`
+	PermVersion        int32      `json:"perm_version"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+}
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
 	row := q.db.QueryRow(ctx, getUserByEmail, email)
-	var i User
+	var i GetUserByEmailRow
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
+		&i.Phone,
 		&i.PasswordHash,
 		&i.DisplayName,
 		&i.Slug,
@@ -231,6 +270,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.AvatarMediaID,
 		&i.CanLogin,
 		&i.IsActive,
+		&i.MustChangePassword,
 		&i.LastLoginAt,
 		&i.PermVersion,
 		&i.CreatedAt,
@@ -240,26 +280,28 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, display_name, slug, title, bio, avatar_media_id,
-       can_login, is_active, last_login_at, perm_version, created_at, updated_at
+SELECT id, email, phone, display_name, slug, title, bio, avatar_media_id,
+       can_login, is_active, must_change_password, last_login_at, perm_version, created_at, updated_at
 FROM users
 WHERE id = $1
 `
 
 type GetUserByIDRow struct {
-	ID            int64      `json:"id"`
-	Email         *string    `json:"email"`
-	DisplayName   string     `json:"display_name"`
-	Slug          string     `json:"slug"`
-	Title         *string    `json:"title"`
-	Bio           *string    `json:"bio"`
-	AvatarMediaID *int64     `json:"avatar_media_id"`
-	CanLogin      bool       `json:"can_login"`
-	IsActive      bool       `json:"is_active"`
-	LastLoginAt   *time.Time `json:"last_login_at"`
-	PermVersion   int32      `json:"perm_version"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID                 int64      `json:"id"`
+	Email              *string    `json:"email"`
+	Phone              *string    `json:"phone"`
+	DisplayName        string     `json:"display_name"`
+	Slug               string     `json:"slug"`
+	Title              *string    `json:"title"`
+	Bio                *string    `json:"bio"`
+	AvatarMediaID      *int64     `json:"avatar_media_id"`
+	CanLogin           bool       `json:"can_login"`
+	IsActive           bool       `json:"is_active"`
+	MustChangePassword bool       `json:"must_change_password"`
+	LastLoginAt        *time.Time `json:"last_login_at"`
+	PermVersion        int32      `json:"perm_version"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, error) {
@@ -268,6 +310,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
+		&i.Phone,
 		&i.DisplayName,
 		&i.Slug,
 		&i.Title,
@@ -275,6 +318,57 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 		&i.AvatarMediaID,
 		&i.CanLogin,
 		&i.IsActive,
+		&i.MustChangePassword,
+		&i.LastLoginAt,
+		&i.PermVersion,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByPhone = `-- name: GetUserByPhone :one
+SELECT id, email, phone, password_hash, display_name, slug, title, bio, avatar_media_id,
+       can_login, is_active, must_change_password, last_login_at, perm_version, created_at, updated_at
+FROM users
+WHERE phone = $1::text
+`
+
+type GetUserByPhoneRow struct {
+	ID                 int64      `json:"id"`
+	Email              *string    `json:"email"`
+	Phone              *string    `json:"phone"`
+	PasswordHash       *string    `json:"password_hash"`
+	DisplayName        string     `json:"display_name"`
+	Slug               string     `json:"slug"`
+	Title              *string    `json:"title"`
+	Bio                *string    `json:"bio"`
+	AvatarMediaID      *int64     `json:"avatar_media_id"`
+	CanLogin           bool       `json:"can_login"`
+	IsActive           bool       `json:"is_active"`
+	MustChangePassword bool       `json:"must_change_password"`
+	LastLoginAt        *time.Time `json:"last_login_at"`
+	PermVersion        int32      `json:"perm_version"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+}
+
+func (q *Queries) GetUserByPhone(ctx context.Context, phone string) (GetUserByPhoneRow, error) {
+	row := q.db.QueryRow(ctx, getUserByPhone, phone)
+	var i GetUserByPhoneRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Phone,
+		&i.PasswordHash,
+		&i.DisplayName,
+		&i.Slug,
+		&i.Title,
+		&i.Bio,
+		&i.AvatarMediaID,
+		&i.CanLogin,
+		&i.IsActive,
+		&i.MustChangePassword,
 		&i.LastLoginAt,
 		&i.PermVersion,
 		&i.CreatedAt,
@@ -284,26 +378,28 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 }
 
 const getUserBySlug = `-- name: GetUserBySlug :one
-SELECT id, email, display_name, slug, title, bio, avatar_media_id,
-       can_login, is_active, last_login_at, perm_version, created_at, updated_at
+SELECT id, email, phone, display_name, slug, title, bio, avatar_media_id,
+       can_login, is_active, must_change_password, last_login_at, perm_version, created_at, updated_at
 FROM users
 WHERE slug = $1
 `
 
 type GetUserBySlugRow struct {
-	ID            int64      `json:"id"`
-	Email         *string    `json:"email"`
-	DisplayName   string     `json:"display_name"`
-	Slug          string     `json:"slug"`
-	Title         *string    `json:"title"`
-	Bio           *string    `json:"bio"`
-	AvatarMediaID *int64     `json:"avatar_media_id"`
-	CanLogin      bool       `json:"can_login"`
-	IsActive      bool       `json:"is_active"`
-	LastLoginAt   *time.Time `json:"last_login_at"`
-	PermVersion   int32      `json:"perm_version"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID                 int64      `json:"id"`
+	Email              *string    `json:"email"`
+	Phone              *string    `json:"phone"`
+	DisplayName        string     `json:"display_name"`
+	Slug               string     `json:"slug"`
+	Title              *string    `json:"title"`
+	Bio                *string    `json:"bio"`
+	AvatarMediaID      *int64     `json:"avatar_media_id"`
+	CanLogin           bool       `json:"can_login"`
+	IsActive           bool       `json:"is_active"`
+	MustChangePassword bool       `json:"must_change_password"`
+	LastLoginAt        *time.Time `json:"last_login_at"`
+	PermVersion        int32      `json:"perm_version"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
 func (q *Queries) GetUserBySlug(ctx context.Context, slug string) (GetUserBySlugRow, error) {
@@ -312,6 +408,7 @@ func (q *Queries) GetUserBySlug(ctx context.Context, slug string) (GetUserBySlug
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
+		&i.Phone,
 		&i.DisplayName,
 		&i.Slug,
 		&i.Title,
@@ -319,6 +416,7 @@ func (q *Queries) GetUserBySlug(ctx context.Context, slug string) (GetUserBySlug
 		&i.AvatarMediaID,
 		&i.CanLogin,
 		&i.IsActive,
+		&i.MustChangePassword,
 		&i.LastLoginAt,
 		&i.PermVersion,
 		&i.CreatedAt,
@@ -529,12 +627,14 @@ func (q *Queries) ListUserRolesByUserIDs(ctx context.Context, userIds []int64) (
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT u.id, u.email, u.display_name, u.slug, u.title, u.bio, u.avatar_media_id,
-       u.can_login, u.is_active, u.last_login_at, u.perm_version, u.created_at, u.updated_at
+SELECT u.id, u.email, u.phone, u.display_name, u.slug, u.title, u.bio, u.avatar_media_id,
+       u.can_login, u.is_active, u.must_change_password, u.last_login_at, u.perm_version,
+       u.created_at, u.updated_at
 FROM users u
 WHERE ($1::text IS NULL
        OR u.display_name ILIKE '%' || $1::text || '%'
-       OR u.email::text ILIKE '%' || $1::text || '%')
+       OR u.email::text ILIKE '%' || $1::text || '%'
+       OR u.phone ILIKE '%' || $1::text || '%')
   AND ($2::boolean IS NULL OR u.can_login = $2::boolean)
   AND ($3::boolean IS NULL OR u.is_active = $3::boolean)
   AND ($4::text IS NULL OR EXISTS (
@@ -554,19 +654,21 @@ type ListUsersParams struct {
 }
 
 type ListUsersRow struct {
-	ID            int64      `json:"id"`
-	Email         *string    `json:"email"`
-	DisplayName   string     `json:"display_name"`
-	Slug          string     `json:"slug"`
-	Title         *string    `json:"title"`
-	Bio           *string    `json:"bio"`
-	AvatarMediaID *int64     `json:"avatar_media_id"`
-	CanLogin      bool       `json:"can_login"`
-	IsActive      bool       `json:"is_active"`
-	LastLoginAt   *time.Time `json:"last_login_at"`
-	PermVersion   int32      `json:"perm_version"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID                 int64      `json:"id"`
+	Email              *string    `json:"email"`
+	Phone              *string    `json:"phone"`
+	DisplayName        string     `json:"display_name"`
+	Slug               string     `json:"slug"`
+	Title              *string    `json:"title"`
+	Bio                *string    `json:"bio"`
+	AvatarMediaID      *int64     `json:"avatar_media_id"`
+	CanLogin           bool       `json:"can_login"`
+	IsActive           bool       `json:"is_active"`
+	MustChangePassword bool       `json:"must_change_password"`
+	LastLoginAt        *time.Time `json:"last_login_at"`
+	PermVersion        int32      `json:"perm_version"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error) {
@@ -588,6 +690,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUse
 		if err := rows.Scan(
 			&i.ID,
 			&i.Email,
+			&i.Phone,
 			&i.DisplayName,
 			&i.Slug,
 			&i.Title,
@@ -595,6 +698,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUse
 			&i.AvatarMediaID,
 			&i.CanLogin,
 			&i.IsActive,
+			&i.MustChangePassword,
 			&i.LastLoginAt,
 			&i.PermVersion,
 			&i.CreatedAt,
@@ -681,20 +785,22 @@ func (q *Queries) TouchLastLogin(ctx context.Context, id int64) error {
 const updateUserAdmin = `-- name: UpdateUserAdmin :one
 UPDATE users
 SET email = $1::citext,
-    display_name = $2,
-    slug = $3,
-    title = $4,
-    bio = $5,
-    avatar_media_id = $6,
-    can_login = $7,
-    is_active = $8
-WHERE id = $9
-RETURNING id, email, display_name, slug, title, bio, avatar_media_id,
-          can_login, is_active, last_login_at, perm_version, created_at, updated_at
+    phone = $2,
+    display_name = $3,
+    slug = $4,
+    title = $5,
+    bio = $6,
+    avatar_media_id = $7,
+    can_login = $8,
+    is_active = $9
+WHERE id = $10
+RETURNING id, email, phone, display_name, slug, title, bio, avatar_media_id,
+          can_login, is_active, must_change_password, last_login_at, perm_version, created_at, updated_at
 `
 
 type UpdateUserAdminParams struct {
 	Email         *string `json:"email"`
+	Phone         *string `json:"phone"`
 	DisplayName   string  `json:"display_name"`
 	Slug          string  `json:"slug"`
 	Title         *string `json:"title"`
@@ -706,24 +812,27 @@ type UpdateUserAdminParams struct {
 }
 
 type UpdateUserAdminRow struct {
-	ID            int64      `json:"id"`
-	Email         *string    `json:"email"`
-	DisplayName   string     `json:"display_name"`
-	Slug          string     `json:"slug"`
-	Title         *string    `json:"title"`
-	Bio           *string    `json:"bio"`
-	AvatarMediaID *int64     `json:"avatar_media_id"`
-	CanLogin      bool       `json:"can_login"`
-	IsActive      bool       `json:"is_active"`
-	LastLoginAt   *time.Time `json:"last_login_at"`
-	PermVersion   int32      `json:"perm_version"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID                 int64      `json:"id"`
+	Email              *string    `json:"email"`
+	Phone              *string    `json:"phone"`
+	DisplayName        string     `json:"display_name"`
+	Slug               string     `json:"slug"`
+	Title              *string    `json:"title"`
+	Bio                *string    `json:"bio"`
+	AvatarMediaID      *int64     `json:"avatar_media_id"`
+	CanLogin           bool       `json:"can_login"`
+	IsActive           bool       `json:"is_active"`
+	MustChangePassword bool       `json:"must_change_password"`
+	LastLoginAt        *time.Time `json:"last_login_at"`
+	PermVersion        int32      `json:"perm_version"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
 func (q *Queries) UpdateUserAdmin(ctx context.Context, arg UpdateUserAdminParams) (UpdateUserAdminRow, error) {
 	row := q.db.QueryRow(ctx, updateUserAdmin,
 		arg.Email,
+		arg.Phone,
 		arg.DisplayName,
 		arg.Slug,
 		arg.Title,
@@ -737,6 +846,7 @@ func (q *Queries) UpdateUserAdmin(ctx context.Context, arg UpdateUserAdminParams
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
+		&i.Phone,
 		&i.DisplayName,
 		&i.Slug,
 		&i.Title,
@@ -744,6 +854,7 @@ func (q *Queries) UpdateUserAdmin(ctx context.Context, arg UpdateUserAdminParams
 		&i.AvatarMediaID,
 		&i.CanLogin,
 		&i.IsActive,
+		&i.MustChangePassword,
 		&i.LastLoginAt,
 		&i.PermVersion,
 		&i.CreatedAt,
@@ -753,16 +864,20 @@ func (q *Queries) UpdateUserAdmin(ctx context.Context, arg UpdateUserAdminParams
 }
 
 const updateUserPassword = `-- name: UpdateUserPassword :exec
-UPDATE users SET password_hash = $1 WHERE id = $2
+UPDATE users
+SET password_hash = $1,
+    must_change_password = $2
+WHERE id = $3
 `
 
 type UpdateUserPasswordParams struct {
-	PasswordHash *string `json:"password_hash"`
-	ID           int64   `json:"id"`
+	PasswordHash       *string `json:"password_hash"`
+	MustChangePassword bool    `json:"must_change_password"`
+	ID                 int64   `json:"id"`
 }
 
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
-	_, err := q.db.Exec(ctx, updateUserPassword, arg.PasswordHash, arg.ID)
+	_, err := q.db.Exec(ctx, updateUserPassword, arg.PasswordHash, arg.MustChangePassword, arg.ID)
 	return err
 }
 
@@ -773,8 +888,8 @@ SET display_name = $1,
     bio = $3,
     avatar_media_id = $4
 WHERE id = $5
-RETURNING id, email, display_name, slug, title, bio, avatar_media_id,
-          can_login, is_active, last_login_at, perm_version, created_at, updated_at
+RETURNING id, email, phone, display_name, slug, title, bio, avatar_media_id,
+          can_login, is_active, must_change_password, last_login_at, perm_version, created_at, updated_at
 `
 
 type UpdateUserProfileParams struct {
@@ -786,19 +901,21 @@ type UpdateUserProfileParams struct {
 }
 
 type UpdateUserProfileRow struct {
-	ID            int64      `json:"id"`
-	Email         *string    `json:"email"`
-	DisplayName   string     `json:"display_name"`
-	Slug          string     `json:"slug"`
-	Title         *string    `json:"title"`
-	Bio           *string    `json:"bio"`
-	AvatarMediaID *int64     `json:"avatar_media_id"`
-	CanLogin      bool       `json:"can_login"`
-	IsActive      bool       `json:"is_active"`
-	LastLoginAt   *time.Time `json:"last_login_at"`
-	PermVersion   int32      `json:"perm_version"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID                 int64      `json:"id"`
+	Email              *string    `json:"email"`
+	Phone              *string    `json:"phone"`
+	DisplayName        string     `json:"display_name"`
+	Slug               string     `json:"slug"`
+	Title              *string    `json:"title"`
+	Bio                *string    `json:"bio"`
+	AvatarMediaID      *int64     `json:"avatar_media_id"`
+	CanLogin           bool       `json:"can_login"`
+	IsActive           bool       `json:"is_active"`
+	MustChangePassword bool       `json:"must_change_password"`
+	LastLoginAt        *time.Time `json:"last_login_at"`
+	PermVersion        int32      `json:"perm_version"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
 func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (UpdateUserProfileRow, error) {
@@ -813,6 +930,7 @@ func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfilePa
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
+		&i.Phone,
 		&i.DisplayName,
 		&i.Slug,
 		&i.Title,
@@ -820,6 +938,7 @@ func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfilePa
 		&i.AvatarMediaID,
 		&i.CanLogin,
 		&i.IsActive,
+		&i.MustChangePassword,
 		&i.LastLoginAt,
 		&i.PermVersion,
 		&i.CreatedAt,

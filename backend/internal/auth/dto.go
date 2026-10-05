@@ -27,19 +27,23 @@ type RoleRef struct {
 
 // Me is the authenticated user's profile with roles and permissions.
 type Me struct {
-	ID            int64     `json:"id"`
-	Email         *string   `json:"email"`
-	DisplayName   string    `json:"display_name"`
-	Slug          string    `json:"slug"`
-	Title         *string   `json:"title"`
-	Bio           *string   `json:"bio"`
-	AvatarMediaID *int64    `json:"avatar_media_id"`
-	CanLogin      bool      `json:"can_login"`
-	IsActive      bool      `json:"is_active"`
-	Roles         []RoleRef `json:"roles"`
-	Permissions   []string  `json:"permissions"`
-	LastLoginAt   *string   `json:"last_login_at"`
-	CreatedAt     string    `json:"created_at"`
+	ID            int64   `json:"id"`
+	Email         *string `json:"email"`
+	Phone         *string `json:"phone"` // normalized (8xxxxxxxxx), no +62/0 prefix
+	DisplayName   string  `json:"display_name"`
+	Slug          string  `json:"slug"`
+	Title         *string `json:"title"`
+	Bio           *string `json:"bio"`
+	AvatarMediaID *int64  `json:"avatar_media_id"`
+	CanLogin      bool    `json:"can_login"`
+	IsActive      bool    `json:"is_active"`
+	// MustChangePassword: the client must send the user to the forced
+	// password change screen; /admin/* answers 403 password_change_required.
+	MustChangePassword bool      `json:"must_change_password"`
+	Roles              []RoleRef `json:"roles"`
+	Permissions        []string  `json:"permissions"`
+	LastLoginAt        *string   `json:"last_login_at"`
+	CreatedAt          string    `json:"created_at"`
 }
 
 // Session is the result of a login or refresh: the raw tokens to put in
@@ -71,11 +75,12 @@ type UpdateMeInput struct {
 	AvatarMediaID *int64  `json:"avatar_media_id" validate:"omitempty,gt=0"`
 }
 
-// loginRequest is the body of POST /auth/login.
+// loginRequest is the validated body of POST /auth/login. Identifier is an
+// email address or an Indonesian mobile number in any accepted form.
 type loginRequest struct {
-	Email    string `json:"email" validate:"required,email,max=254"`
-	Password string `json:"password" validate:"required,max=128"`
-	Remember bool   `json:"remember"`
+	Identifier string `json:"identifier" validate:"required,max=254"`
+	Password   string `json:"password" validate:"required,max=128"`
+	Remember   bool   `json:"remember"`
 }
 
 // changePasswordRequest is the body of PUT /auth/me/password.

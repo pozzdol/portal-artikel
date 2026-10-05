@@ -20,11 +20,21 @@ import (
 	"portal-berita/backend/internal/revalidate"
 )
 
+// Invalidator drops cached permission data for one user; satisfied by
+// *rbac.Checker. The default is a no-op.
+type Invalidator interface {
+	Invalidate(userID int64)
+}
+
+type noopInvalidator struct{}
+
+func (noopInvalidator) Invalidate(int64) {}
+
 // Service implements the users & authors domain (§1.11 of the Fase 2 plan).
 type Service struct {
 	pool    *pgxpool.Pool
 	auditor *audit.Logger
-	inv     rbac.Invalidator
+	inv     Invalidator
 	reval   revalidate.Client
 }
 
@@ -34,36 +44,64 @@ func NewService(pool *pgxpool.Pool, auditor *audit.Logger, inv rbac.Invalidator,
 	if reval == nil {
 		reval = revalidate.Noop{}
 	}
-	return &Service{pool: pool, auditor: auditor, inv: inv, reval: reval}
+	var i Invalidator = noopInvalidator{}
+	if inv != nil {
+		i = inv
+	}
+	return &Service{pool: pool, auditor: auditor, inv: i, reval: reval}
+}
+
+// WithInvalidator replaces the invalidator (nil restores the no-op) and
+// returns s for chaining.
+func (s *Service) WithInvalidator(inv Invalidator) *Service {
+	if inv == nil {
+		inv = noopInvalidator{}
+	}
+	s.inv = inv
+	return s
 }
 
 // userRow is the common shape shared by GetUserByIDRow, CreateUserRow and
 // UpdateUserAdminRow (distinct sqlc-generated types with identical fields).
 type userRow struct {
-	ID            int64
-	Email         *string
-	DisplayName   string
-	Slug          string
-	Title         *string
-	Bio           *string
-	AvatarMediaID *int64
-	CanLogin      bool
-	IsActive      bool
-	LastLoginAt   *time.Time
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID                 int64
+	Email              *string
+	Phone              *string
+	DisplayName        string
+	Slug               string
+	Title              *string
+	Bio                *string
+	AvatarMediaID      *int64
+	CanLogin           bool
+	IsActive           bool
+	MustChangePassword bool
+	LastLoginAt        *time.Time
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 func fromGetUserByIDRow(r dbgen.GetUserByIDRow) userRow {
-	return userRow{r.ID, r.Email, r.DisplayName, r.Slug, r.Title, r.Bio, r.AvatarMediaID, r.CanLogin, r.IsActive, r.LastLoginAt, r.CreatedAt, r.UpdatedAt}
+	return userRow{
+		ID: r.ID, Email: r.Email, Phone: r.Phone, DisplayName: r.DisplayName, Slug: r.Slug, Title: r.Title,
+		Bio: r.Bio, AvatarMediaID: r.AvatarMediaID, CanLogin: r.CanLogin, IsActive: r.IsActive,
+		MustChangePassword: r.MustChangePassword, LastLoginAt: r.LastLoginAt, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+	}
 }
 
 func fromCreateUserRow(r dbgen.CreateUserRow) userRow {
-	return userRow{r.ID, r.Email, r.DisplayName, r.Slug, r.Title, r.Bio, r.AvatarMediaID, r.CanLogin, r.IsActive, r.LastLoginAt, r.CreatedAt, r.UpdatedAt}
+	return userRow{
+		ID: r.ID, Email: r.Email, Phone: r.Phone, DisplayName: r.DisplayName, Slug: r.Slug, Title: r.Title,
+		Bio: r.Bio, AvatarMediaID: r.AvatarMediaID, CanLogin: r.CanLogin, IsActive: r.IsActive,
+		MustChangePassword: r.MustChangePassword, LastLoginAt: r.LastLoginAt, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+	}
 }
 
 func fromUpdateUserAdminRow(r dbgen.UpdateUserAdminRow) userRow {
-	return userRow{r.ID, r.Email, r.DisplayName, r.Slug, r.Title, r.Bio, r.AvatarMediaID, r.CanLogin, r.IsActive, r.LastLoginAt, r.CreatedAt, r.UpdatedAt}
+	return userRow{
+		ID: r.ID, Email: r.Email, Phone: r.Phone, DisplayName: r.DisplayName, Slug: r.Slug, Title: r.Title,
+		Bio: r.Bio, AvatarMediaID: r.AvatarMediaID, CanLogin: r.CanLogin, IsActive: r.IsActive,
+		MustChangePassword: r.MustChangePassword, LastLoginAt: r.LastLoginAt, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+	}
 }
 
 func toRoleRefs(rows []dbgen.ListUserRolesRow) []RoleRef {
@@ -79,16 +117,18 @@ func itemFromRow(r userRow, roles []RoleRef) UserItem {
 		roles = []RoleRef{}
 	}
 	return UserItem{
-		ID:          r.ID,
-		Email:       r.Email,
-		DisplayName: r.DisplayName,
-		Slug:        r.Slug,
-		Title:       r.Title,
-		CanLogin:    r.CanLogin,
-		IsActive:    r.IsActive,
-		LastLoginAt: httpx.FormatTimePtr(r.LastLoginAt),
-		Roles:       roles,
-		CreatedAt:   httpx.FormatTime(r.CreatedAt),
+		ID:                 r.ID,
+		Email:              r.Email,
+		Phone:              r.Phone,
+		DisplayName:        r.DisplayName,
+		Slug:               r.Slug,
+		Title:              r.Title,
+		CanLogin:           r.CanLogin,
+		IsActive:           r.IsActive,
+		MustChangePassword: r.MustChangePassword,
+		LastLoginAt:        httpx.FormatTimePtr(r.LastLoginAt),
+		Roles:              roles,
+		CreatedAt:          httpx.FormatTime(r.CreatedAt),
 	}
 }
 
@@ -131,7 +171,8 @@ func (s *Service) List(ctx context.Context, a Actor, f ListFilter) ([]UserItem, 
 	q := dbgen.New(s.pool)
 	var qPtr, rolePtr *string
 	if f.Q != "" {
-		qPtr = &f.Q
+		sq := searchTerm(f.Q)
+		qPtr = &sq
 	}
 	if f.RoleCode != "" {
 		rolePtr = &f.RoleCode
@@ -160,7 +201,7 @@ func (s *Service) List(ctx context.Context, a Actor, f ListFilter) ([]UserItem, 
 	items := make([]UserItem, len(rows))
 	for i, r := range rows {
 		items[i] = itemFromRow(userRow{
-			ID: r.ID, Email: r.Email, DisplayName: r.DisplayName, Slug: r.Slug, Title: r.Title,
+			ID: r.ID, Email: r.Email, Phone: r.Phone, MustChangePassword: r.MustChangePassword, DisplayName: r.DisplayName, Slug: r.Slug, Title: r.Title,
 			CanLogin: r.CanLogin, IsActive: r.IsActive, LastLoginAt: r.LastLoginAt, CreatedAt: r.CreatedAt,
 		}, rolesByUser[r.ID])
 	}
@@ -191,11 +232,23 @@ func (s *Service) Get(ctx context.Context, a Actor, id int64) (*UserDetail, erro
 // Create inserts a user. See CreateInput / UpdateInput docs for the
 // author<->login and authors.manage rules.
 func (s *Service) Create(ctx context.Context, a Actor, in CreateInput) (*UserDetail, error) {
-	if authorsOnly(a) && (in.Email != nil || in.Password != nil || in.CanLogin || len(in.RoleIDs) > 0) {
+	if authorsOnly(a) && (in.Email != nil || in.Phone != nil || in.Password != nil || in.CanLogin || len(in.RoleIDs) > 0) {
 		return nil, apperr.Forbidden("Aktor authors.manage hanya dapat membuat penulis tanpa akses login.")
 	}
-	if in.CanLogin && (in.Email == nil || in.Password == nil) {
+	in.Email = optString(in.Email)
+	phoneN, err := optPhone(in.Phone)
+	if err != nil {
+		return nil, err
+	}
+	if in.CanLogin && in.Password == nil {
 		return nil, apperr.Validation(map[string]string{"password": "Wajib diisi untuk pengguna dengan akses login."})
+	}
+	if in.CanLogin && in.Email == nil && phoneN == nil {
+		return nil, apperr.Validation(map[string]string{"email": msgNeedIdentity})
+	}
+	mustChange := in.Password != nil
+	if in.Password != nil && in.MustChangePassword != nil {
+		mustChange = *in.MustChangePassword
 	}
 	isActive := true
 	if in.IsActive != nil {
@@ -203,7 +256,7 @@ func (s *Service) Create(ctx context.Context, a Actor, in CreateInput) (*UserDet
 	}
 
 	var detail *UserDetail
-	err := database.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = database.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := dbgen.New(tx)
 
 		roles, err := resolveRoles(ctx, q, in.RoleIDs)
@@ -240,9 +293,9 @@ func (s *Service) Create(ctx context.Context, a Actor, in CreateInput) (*UserDet
 		}
 
 		row, err := q.CreateUser(ctx, dbgen.CreateUserParams{
-			Email: in.Email, PasswordHash: hash, DisplayName: in.DisplayName, Slug: slug,
+			Email: in.Email, Phone: phoneN, PasswordHash: hash, DisplayName: in.DisplayName, Slug: slug,
 			Title: in.Title, Bio: in.Bio, AvatarMediaID: in.AvatarMediaID,
-			CanLogin: in.CanLogin, IsActive: isActive,
+			CanLogin: in.CanLogin, IsActive: isActive, MustChangePassword: mustChange,
 		})
 		if err != nil {
 			if c, ok := database.UniqueViolation(err); ok {
@@ -267,6 +320,12 @@ func (s *Service) Create(ctx context.Context, a Actor, in CreateInput) (*UserDet
 		changes := map[string]any{"display_name": in.DisplayName, "can_login": in.CanLogin, "is_active": isActive}
 		if in.Email != nil {
 			changes["email"] = *in.Email
+		}
+		if phoneN != nil {
+			changes["phone"] = *phoneN
+		}
+		if in.Password != nil {
+			changes["must_change_password"] = mustChange
 		}
 		if len(in.RoleIDs) > 0 {
 			changes["role_ids"] = in.RoleIDs
@@ -323,8 +382,8 @@ func (s *Service) Update(ctx context.Context, a Actor, id int64, in UpdateInput)
 			if current.CanLogin {
 				return apperr.Forbidden("Aktor authors.manage hanya dapat mengelola penulis tanpa akses login.")
 			}
-			if in.Email != nil || in.Password != nil || (in.CanLogin != nil && *in.CanLogin) || in.RoleIDs != nil {
-				return apperr.Forbidden("Aktor authors.manage tidak dapat mengubah email, kata sandi, akses login, atau peran.")
+			if in.Email.Set || in.Phone.Set || in.Password != nil || (in.CanLogin != nil && *in.CanLogin) || in.RoleIDs != nil {
+				return apperr.Forbidden("Aktor authors.manage tidak dapat mengubah email, nomor HP, kata sandi, akses login, atau peran.")
 			}
 		}
 
@@ -370,24 +429,33 @@ func (s *Service) Update(ctx context.Context, a Actor, id int64, in UpdateInput)
 		}
 
 		newEmail := current.Email
-		if in.Email != nil {
-			newEmail = in.Email
+		if in.Email.Set {
+			newEmail = optString(in.Email.Value)
 		}
-		if convertingToLogin {
-			if in.Password == nil {
-				return apperr.Validation(map[string]string{"password": "Wajib diisi saat mengaktifkan akses login."})
+		newPhone := current.Phone
+		if in.Phone.Set {
+			if newPhone, err = optPhone(in.Phone.Value); err != nil {
+				return err
 			}
-			if newEmail == nil {
-				return apperr.Validation(map[string]string{"email": "Wajib diisi saat mengaktifkan akses login."})
-			}
+		}
+		if convertingToLogin && in.Password == nil {
+			return apperr.Validation(map[string]string{"password": "Wajib diisi saat mengaktifkan akses login."})
+		}
+		if newCanLogin && newEmail == nil && newPhone == nil {
+			return apperr.Validation(map[string]string{"email": msgNeedIdentity})
 		}
 
-		if in.Password != nil && !convertingToAuthor {
+		passwordChanged := in.Password != nil && !convertingToAuthor
+		mustChange := true
+		if in.MustChangePassword != nil {
+			mustChange = *in.MustChangePassword
+		}
+		if passwordChanged {
 			h, err := auth.HashPassword(*in.Password)
 			if err != nil {
 				return fmt.Errorf("user: hash password: %w", err)
 			}
-			if err := q.UpdateUserPassword(ctx, dbgen.UpdateUserPasswordParams{PasswordHash: &h, ID: id}); err != nil {
+			if err := q.UpdateUserPassword(ctx, dbgen.UpdateUserPasswordParams{PasswordHash: &h, MustChangePassword: mustChange, ID: id}); err != nil {
 				return fmt.Errorf("user: update password: %w", err)
 			}
 		}
@@ -403,6 +471,7 @@ func (s *Service) Update(ctx context.Context, a Actor, id int64, in UpdateInput)
 				return fmt.Errorf("user: revoke sessions: %w", err)
 			}
 			newEmail = nil
+			newPhone = nil
 			newCanLogin = false
 		} else if changingRoles {
 			if err := q.DeleteUserRoles(ctx, id); err != nil {
@@ -443,7 +512,7 @@ func (s *Service) Update(ctx context.Context, a Actor, id int64, in UpdateInput)
 		}
 
 		row, err := q.UpdateUserAdmin(ctx, dbgen.UpdateUserAdminParams{
-			Email: newEmail, DisplayName: in.DisplayName, Slug: newSlug, Title: newTitle, Bio: newBio,
+			Email: newEmail, Phone: newPhone, DisplayName: in.DisplayName, Slug: newSlug, Title: newTitle, Bio: newBio,
 			AvatarMediaID: newAvatar, CanLogin: newCanLogin, IsActive: newActive, ID: id,
 		})
 		if err != nil {
@@ -457,12 +526,12 @@ func (s *Service) Update(ctx context.Context, a Actor, id int64, in UpdateInput)
 		}
 
 		roleChanged := changingRoles || convertingToAuthor
-		if roleChanged {
+		if roleChanged || passwordChanged {
 			if _, err := q.BumpUserPermVersion(ctx, id); err != nil {
 				return fmt.Errorf("user: bump perm version: %w", err)
 			}
 		}
-		invalidate = roleChanged || changingCanLogin || changingActive
+		invalidate = roleChanged || passwordChanged || changingCanLogin || changingActive
 
 		updatedRoles, err := q.ListUserRoles(ctx, id)
 		if err != nil {
@@ -473,8 +542,15 @@ func (s *Service) Update(ctx context.Context, a Actor, id int64, in UpdateInput)
 		if in.DisplayName != current.DisplayName {
 			changes["display_name"] = in.DisplayName
 		}
-		if in.Email != nil {
-			changes["email"] = in.Email
+		if in.Email.Set {
+			changes["email"] = newEmail
+		}
+		if in.Phone.Set {
+			changes["phone"] = newPhone
+		}
+		if passwordChanged {
+			changes["password_changed"] = true
+			changes["must_change_password"] = mustChange
 		}
 		if in.Slug != nil {
 			changes["slug"] = newSlug
@@ -529,7 +605,11 @@ func (s *Service) Update(ctx context.Context, a Actor, id int64, in UpdateInput)
 // ResetPassword sets a new password for a login-capable user (users.manage
 // only) and revokes all of their refresh token families.
 func (s *Service) ResetPassword(ctx context.Context, a Actor, id int64, in ResetPasswordInput) error {
-	return database.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+	mustChange := true
+	if in.MustChangePassword != nil {
+		mustChange = *in.MustChangePassword
+	}
+	err := database.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := dbgen.New(tx)
 		row, err := q.GetUserByID(ctx, id)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -545,17 +625,26 @@ func (s *Service) ResetPassword(ctx context.Context, a Actor, id int64, in Reset
 		if err != nil {
 			return fmt.Errorf("user: hash password: %w", err)
 		}
-		if err := q.UpdateUserPassword(ctx, dbgen.UpdateUserPasswordParams{PasswordHash: &hash, ID: id}); err != nil {
+		if err := q.UpdateUserPassword(ctx, dbgen.UpdateUserPasswordParams{PasswordHash: &hash, MustChangePassword: mustChange, ID: id}); err != nil {
 			return fmt.Errorf("user: reset password: %w", err)
+		}
+		if _, err := q.BumpUserPermVersion(ctx, id); err != nil {
+			return fmt.Errorf("user: bump perm version: %w", err)
 		}
 		if _, err := q.RevokeAllUserRefreshTokens(ctx, id); err != nil {
 			return fmt.Errorf("user: revoke sessions: %w", err)
 		}
 		return s.auditor.LogTx(ctx, tx, audit.Entry{
 			UserID: a.Meta.UserID, Action: audit.ActionPasswordReset, EntityType: audit.EntityUser,
-			EntityID: &id, Summary: "Reset kata sandi pengguna oleh admin.", IP: a.Meta.IP,
+			EntityID: &id, Summary: "Reset kata sandi pengguna oleh admin.",
+			Changes: map[string]any{"must_change_password": mustChange}, IP: a.Meta.IP,
 		})
 	})
+	if err != nil {
+		return err
+	}
+	s.inv.Invalidate(id)
+	return nil
 }
 
 // SetActive activates or deactivates a user (users.manage only). Self-

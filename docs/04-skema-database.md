@@ -59,19 +59,21 @@ erDiagram
 |---|---|---|---|---|
 | id | BIGINT identity | ✗ | | PK |
 | email | CITEXT | ✓ | | UNIQUE. Boleh NULL untuk penulis tanpa login |
+| phone | TEXT | ✓ | | UNIQUE. Format: `^8[0-9]{8,11}$` (CHECK). Nomor HP login, disimpan ternormalisasi (periksa `phone.Normalize()`) |
 | password_hash | TEXT | ✓ | | argon2id (format PHC). NULL jika `can_login=false` |
 | display_name | TEXT | ✗ | | Nama tampil, misal "Ust. Ahmad Fauzi" |
 | slug | TEXT | ✗ | | UNIQUE, dipakai di `/penulis/[slug]` |
 | title | TEXT | ✓ | | Gelar/jabatan, misal "Pengurus Yayasan" |
 | bio | TEXT | ✓ | | Bio singkat |
 | avatar_media_id | BIGINT | ✓ | | FK `media(id)` ON DELETE SET NULL |
-| can_login | BOOLEAN | ✗ | `false` | Jika `true`, email & password wajib (CHECK) |
+| can_login | BOOLEAN | ✗ | `false` | Jika `true`, (email OR phone) & password wajib (CHECK) |
 | is_active | BOOLEAN | ✗ | `true` | Nonaktif = tidak bisa login dan tidak tampil di pilihan penulis |
+| must_change_password | BOOLEAN | ✗ | `false` | Jika `true`, user harus ganti password sebelum akses dasbor. Diset ke `false` setelah ganti password pertama kali |
 | last_login_at | TIMESTAMPTZ | ✓ | | |
-| perm_version | INT | ✗ | `1` | Dinaikkan saat role berubah (invalidasi cache permission) |
+| perm_version | INT | ✗ | `1` | Dinaikkan saat role berubah atau password wajib diganti (invalidasi cache permission) |
 | created_at / updated_at | TIMESTAMPTZ | ✗ | `now()` | |
 
-Constraint: `CHECK (NOT can_login OR (email IS NOT NULL AND password_hash IS NOT NULL))`.
+Constraint: `CHECK (NOT can_login OR (password_hash IS NOT NULL AND (email IS NOT NULL OR phone IS NOT NULL)))`.
 
 #### `roles`
 | Kolom | Tipe | Keterangan |
@@ -433,6 +435,8 @@ Backend memvalidasi setiap key terhadap struct Go, sehingga key yang tidak diken
 | `00008_pages_snippets.sql` | pages, snippets |
 | `00009_site.sql` | homepage_sections, menus, menu_items, site_settings |
 | `00010_seed_rbac.sql` | Data role & permission (bagian dari skema, bukan data contoh) |
+| `00011_users_must_change_password.sql` | Tambah kolom `must_change_password BOOLEAN NOT NULL DEFAULT false` ke `users` |
+| `00012_users_phone.sql` | Tambah kolom `phone TEXT` ke `users` dengan UNIQUE constraint dan CHECK format, update constraint login |
 
 Seed **konten contoh** tidak dimasukkan ke migrasi. Seed dijalankan lewat `go run ./cmd/tool seed`
 (idempoten, bisa dijalankan ulang) agar database produksi tidak otomatis terisi data contoh.

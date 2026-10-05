@@ -124,6 +124,13 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, err)
 		return
 	}
+	if err := httpx.Validate(&struct {
+		Email *string `json:"email" validate:"omitempty,email,max=254"`
+		Phone *string `json:"phone" validate:"omitempty,max=40"`
+	}{in.Email.Value, in.Phone.Value}); err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
 	detail, err := h.svc.Update(r.Context(), ActorFromRequest(r), id, in)
 	if err != nil {
 		httpx.WriteError(w, r, err)

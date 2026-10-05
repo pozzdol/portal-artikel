@@ -163,7 +163,8 @@ func mountAPI(api chi.Router, d Deps) []jobs.Job {
 	checker := rbac.NewChecker(d.Pool, permCacheTTL)
 	auditor := audit.New(d.Pool)
 	authSvc := auth.NewService(d.Pool, issuer, auditor, auth.NewLoginLimiter(loginLimit, loginWindow), cfg).
-		WithRevalidator(d.Reval)
+		WithRevalidator(d.Reval).
+		WithInvalidator(checker)
 
 	authn := appmw.Authenticate(issuer)
 	csrf := appmw.CSRF
@@ -241,7 +242,7 @@ func mountAPI(api chi.Router, d Deps) []jobs.Job {
 
 	api.Route("/admin", func(ad chi.Router) {
 		ad.Use(authn, csrf)
-		user.NewHandler(user.NewService(d.Pool, auditor, checker, d.Reval)).Register(ad, guard)
+		user.NewHandler(user.NewService(d.Pool, auditor, checker, d.Reval).WithInvalidator(checker)).Register(ad, guard)
 		role.NewHandler(role.NewService(d.Pool, auditor, checker)).Register(ad, guard)
 		audit.NewHandler(audit.NewListService(d.Pool)).Register(ad, guard)
 

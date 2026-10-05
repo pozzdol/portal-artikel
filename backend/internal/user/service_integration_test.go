@@ -288,7 +288,7 @@ func TestServiceLoginAuthorConversion(t *testing.T) {
 	assert.True(t, errors.Is(err, apperr.ErrValidation))
 
 	loggedIn, err := svc.Update(ctx, actor, author.ID, user.UpdateInput{
-		DisplayName: "Calon Staf", CanLogin: ptr(true), Email: ptr("calon@test.local"), Password: ptr("Password-Calon-1"),
+		DisplayName: "Calon Staf", CanLogin: ptr(true), Email: user.Str("calon@test.local"), Password: ptr("Password-Calon-1"),
 	})
 	require.NoError(t, err)
 	assert.True(t, loggedIn.CanLogin)
@@ -331,4 +331,143 @@ func activeSessionCount(t *testing.T, pool *pgxpool.Pool, userID int64) int64 {
 		`SELECT count(*) FROM refresh_tokens WHERE user_id = $1 AND revoked_at IS NULL`, userID).Scan(&n)
 	require.NoError(t, err)
 	return n
+}
+
+// --- phone / must_change_password ---
+
+func mustChangeFlag(t *testing.T, pool *pgxpool.Pool, id int64) (flag bool, pv int32) {
+	t.Helper()
+	require.NoError(t, pool.QueryRow(context.Background(),
+		`SELECT must_change_password, perm_version FROM users WHERE id = $1`, id).Scan(&flag, &pv))
+	return
+}
+
+func TestServiceCreatePhoneOnlyLogin(t *testing.T) {
+	pool := testdb.New(t)
+	svc, _ := newService(pool)
+	adminID, _, _ := testdb.SuperAdmin(t, pool)
+	actor := actorWith(adminID, rbac.PermUsersManage)
+	ctx := context.Background()
+
+	d, err := svc.Create(ctx, actor, user.CreateInput{
+		DisplayName: "Hp Saja", Phone: ptr("+62 812-3456-789"), Password: ptr("Password-Hp-12345"), CanLogin: true,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, d.Phone)
+	assert.Equal(t, "8123456789", *d.Phone)
+	assert.Nil(t, d.Email)
+	assert.True(t, d.MustChangePassword, "defaults to true when a password is supplied")
+
+	// Same number in another form is a duplicate.
+	_, err = svc.Create(ctx, actor, user.CreateInput{
+		DisplayName: "Dupe Hp", Phone: ptr("08123456789"), Password: ptr("Password-Hp-12345"), CanLogin: true,
+	})
+	var ve *apperr.Error
+	require.True(t, errors.As(err, &ve))
+	assert.Equal(t, "Nomor HP sudah terdaftar.", ve.Fields["phone"])
+
+	// Invalid phone.
+	_, err = svc.Create(ctx, actor, user.CreateInput{DisplayName: "Bad", Phone: ptr("abc")})
+	require.True(t, errors.As(err, &ve))
+	assert.Contains(t, ve.Fields["phone"], "Format nomor HP tidak valid")
+
+	// Login without email or phone.
+	_, err = svc.Create(ctx, actor, user.CreateInput{DisplayName: "NoId", Password: ptr("Password-Hp-12345"), CanLogin: true})
+	require.True(t, errors.As(err, &ve))
+	assert.Contains(t, ve.Fields["email"], "Isi email atau nomor HP")
+
+	// Explicit must_change_password:false.
+	d2, err := svc.Create(ctx, actor, user.CreateInput{
+		DisplayName: "Tanpa Wajib", Email: ptr("tw@test.local"), Password: ptr("Password-Tw-12345"), CanLogin: true,
+		MustChangePassword: ptr(false),
+	})
+	require.NoError(t, err)
+	assert.False(t, d2.MustChangePassword)
+
+	// authors.manage-only actor may not set phone.
+	_, err = svc.Create(ctx, actorWith(adminID, rbac.PermAuthorsManage), user.CreateInput{DisplayName: "A", Phone: ptr("0812 3456 999")})
+	assert.True(t, errors.Is(err, apperr.ErrForbidden))
+}
+
+func TestServiceUpdateClearAndPhone(t *testing.T) {
+	pool := testdb.New(t)
+	svc, inv := newService(pool)
+	adminID, _, _ := testdb.SuperAdmin(t, pool)
+	actor := actorWith(adminID, rbac.PermUsersManage)
+	ctx := context.Background()
+
+	d, err := svc.Create(ctx, actor, user.CreateInput{
+		DisplayName: "Dua Jalur", Email: ptr("dua@test.local"), Phone: ptr("0812 3456 7890"),
+		Password: ptr("Password-Dua-12345"), CanLogin: true, MustChangePassword: ptr(false),
+	})
+	require.NoError(t, err)
+
+	// Omitted keeps both.
+	u, err := svc.Update(ctx, actor, d.ID, user.UpdateInput{DisplayName: "Dua Jalur"})
+	require.NoError(t, err)
+	assert.NotNil(t, u.Email)
+	assert.NotNil(t, u.Phone)
+
+	// Clearing email is fine while a phone remains.
+	u, err = svc.Update(ctx, actor, d.ID, user.UpdateInput{DisplayName: "Dua Jalur", Email: user.Clear()})
+	require.NoError(t, err)
+	assert.Nil(t, u.Email)
+	assert.Equal(t, "81234567890", *u.Phone)
+
+	// Clearing the last identifier of a login user is rejected.
+	_, err = svc.Update(ctx, actor, d.ID, user.UpdateInput{DisplayName: "Dua Jalur", Phone: user.Clear()})
+	var ve *apperr.Error
+	require.True(t, errors.As(err, &ve))
+	assert.Contains(t, ve.Fields["email"], "Isi email atau nomor HP")
+
+	// Password via update: flagged by default, pv bumped, cache invalidated.
+	_, pvBefore := mustChangeFlag(t, pool, d.ID)
+	_, err = svc.Update(ctx, actor, d.ID, user.UpdateInput{DisplayName: "Dua Jalur", Password: ptr("Password-Baru-12345")})
+	require.NoError(t, err)
+	flag, pvAfter := mustChangeFlag(t, pool, d.ID)
+	assert.True(t, flag)
+	assert.Greater(t, pvAfter, pvBefore)
+	assert.True(t, inv.called(d.ID))
+
+	// Converting to author clears phone and the flag.
+	back, err := svc.Update(ctx, actor, d.ID, user.UpdateInput{DisplayName: "Dua Jalur", CanLogin: ptr(false)})
+	require.NoError(t, err)
+	assert.Nil(t, back.Phone)
+	assert.False(t, back.MustChangePassword)
+
+	// authors.manage-only actor may not touch phone.
+	_, err = svc.Update(ctx, actorWith(adminID, rbac.PermAuthorsManage), d.ID, user.UpdateInput{DisplayName: "X", Phone: user.Str("0812 3456 999")})
+	assert.True(t, errors.Is(err, apperr.ErrForbidden))
+}
+
+func TestServiceResetPasswordFlagAndSearch(t *testing.T) {
+	pool := testdb.New(t)
+	svc, inv := newService(pool)
+	adminID, _, _ := testdb.SuperAdmin(t, pool)
+	actor := actorWith(adminID, rbac.PermUsersManage)
+	ctx := context.Background()
+
+	target := testdb.CreateUser(t, pool, testdb.UserOpts{
+		Phone: "8123456789", Password: "Password-Reset-1", DisplayName: "Cari Hp", CanLogin: true, IsActive: true,
+	})
+	_, pvBefore := mustChangeFlag(t, pool, target)
+	require.NoError(t, svc.ResetPassword(ctx, actor, target, user.ResetPasswordInput{NewPassword: "Password-Baru-123"}))
+	flag, pvAfter := mustChangeFlag(t, pool, target)
+	assert.True(t, flag)
+	assert.Greater(t, pvAfter, pvBefore)
+	assert.True(t, inv.called(target))
+
+	require.NoError(t, svc.ResetPassword(ctx, actor, target, user.ResetPasswordInput{NewPassword: "Password-Baru-456", MustChangePassword: ptr(false)}))
+	flag, _ = mustChangeFlag(t, pool, target)
+	assert.False(t, flag)
+
+	for _, q := range []string{"0812 3456", "+62 812-3456", "62812", "8123456789"} {
+		items, _, err := svc.List(ctx, actor, user.ListFilter{Q: q, Page: page(1, 20)})
+		require.NoError(t, err)
+		var found bool
+		for _, it := range items {
+			found = found || it.ID == target
+		}
+		assert.True(t, found, "q=%q", q)
+	}
 }

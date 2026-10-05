@@ -14,13 +14,16 @@ var (
 	ErrTokenExpired       = errors.New("token expired")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrForbidden          = errors.New("forbidden")
-	ErrCSRF               = errors.New("csrf failed")
-	ErrNotFound           = errors.New("not found")
-	ErrConflict           = errors.New("conflict")
-	ErrValidation         = errors.New("validation failed")
-	ErrRateLimited        = errors.New("rate limited")
-	ErrUnsupportedMedia   = errors.New("unsupported media type")
-	ErrPayloadTooLarge    = errors.New("payload too large")
+	// ErrPasswordChangeRequired: the user must change the initial password
+	// before using the admin API (403 password_change_required).
+	ErrPasswordChangeRequired = errors.New("password change required")
+	ErrCSRF                   = errors.New("csrf failed")
+	ErrNotFound               = errors.New("not found")
+	ErrConflict               = errors.New("conflict")
+	ErrValidation             = errors.New("validation failed")
+	ErrRateLimited            = errors.New("rate limited")
+	ErrUnsupportedMedia       = errors.New("unsupported media type")
+	ErrPayloadTooLarge        = errors.New("payload too large")
 )
 
 // Error is a domain error with an optional user-facing (Indonesian) message,
@@ -56,6 +59,10 @@ func InvalidCredentials() *Error { return &Error{Kind: ErrInvalidCredentials} }
 
 // Forbidden: missing permission or disallowed action (403). Empty msg uses the HTTP default.
 func Forbidden(msg string) *Error { return &Error{Kind: ErrForbidden, Message: msg} }
+
+// PasswordChangeRequired: the user is flagged must_change_password and may
+// only use the self-service auth endpoints until the password is changed (403).
+func PasswordChangeRequired() *Error { return &Error{Kind: ErrPasswordChangeRequired} }
 
 // CSRF: CSRF token missing or mismatched (403).
 func CSRF() *Error { return &Error{Kind: ErrCSRF} }

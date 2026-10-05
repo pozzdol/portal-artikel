@@ -17,6 +17,7 @@ import (
 	"portal-berita/backend/internal/database"
 	"portal-berita/backend/internal/dbgen"
 	"portal-berita/backend/internal/httpx"
+	"portal-berita/backend/internal/phone"
 	"portal-berita/backend/internal/revalidate"
 )
 
@@ -28,6 +29,7 @@ const (
 	msgWrongPassword   = "Kata sandi saat ini salah."
 	msgMediaNotFound   = "Media tidak ditemukan."
 	msgRequired        = "Wajib diisi."
+	msgSamePassword    = "Kata sandi baru harus berbeda dari kata sandi saat ini."
 	constraintAvatarFK = "users_avatar_media_id_fkey"
 )
 
@@ -46,7 +48,18 @@ type Service struct {
 	now       func() time.Time
 	dummyHash string
 	reval     revalidate.Client
+	inv       Invalidator
 }
+
+// Invalidator drops cached authorization state of a user (rbac.Checker
+// implements it). Declared locally so auth does not import rbac.
+type Invalidator interface {
+	Invalidate(userID int64)
+}
+
+type noopInvalidator struct{}
+
+func (noopInvalidator) Invalidate(int64) {}
 
 // NewService wires the auth service. A dummy password hash is computed once
 // so failed logins for unknown/disabled accounts cost the same as real ones.
@@ -65,7 +78,18 @@ func NewService(pool *pgxpool.Pool, issuer *TokenIssuer, auditor *audit.Logger, 
 		now:       func() time.Time { return time.Now().UTC() },
 		dummyHash: dummy,
 		reval:     revalidate.Noop{},
+		inv:       noopInvalidator{},
 	}
+}
+
+// WithInvalidator sets the cache invalidated after a password change (the
+// flag and perm_version change). A nil value is treated as a no-op.
+func (s *Service) WithInvalidator(inv Invalidator) *Service {
+	if inv == nil {
+		inv = noopInvalidator{}
+	}
+	s.inv = inv
+	return s
 }
 
 // WithClock replaces the service time source (tests).
@@ -89,12 +113,56 @@ func normalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
-func limiterKey(c Client, email string) string {
+// Identifier kinds accepted at login.
+const (
+	identEmail   = "email"
+	identPhone   = "phone"
+	identUnknown = "unknown"
+)
+
+// parseIdentifier classifies a login identifier: anything containing '@' is
+// an email (trimmed, lower-cased); otherwise it must be a valid Indonesian
+// mobile number (normalized). Unparseable input yields identUnknown with the
+// trimmed raw value; such logins always fail like an unknown user.
+func parseIdentifier(raw string) (kind, norm string) {
+	t := strings.TrimSpace(raw)
+	if strings.Contains(t, "@") {
+		return identEmail, normalizeEmail(t)
+	}
+	if n, ok := phone.Normalize(t); ok {
+		return identPhone, n
+	}
+	return identUnknown, strings.ToLower(t)
+}
+
+func limiterKey(c Client, kind, norm string) string {
 	ip := "unknown"
 	if c.IP != nil {
 		ip = c.IP.String()
 	}
-	return ip + "|" + email
+	return ip + "|" + kind + ":" + norm
+}
+
+// lookupLoginUser loads the user for a parsed identifier. found is false for
+// unknown users and unparseable identifiers.
+func lookupLoginUser(ctx context.Context, q *dbgen.Queries, kind, norm string) (u dbgen.GetUserByEmailRow, found bool, err error) {
+	switch kind {
+	case identEmail:
+		u, err = q.GetUserByEmail(ctx, norm)
+	case identPhone:
+		var pu dbgen.GetUserByPhoneRow
+		pu, err = q.GetUserByPhone(ctx, norm)
+		u = dbgen.GetUserByEmailRow(pu)
+	default:
+		return u, false, nil
+	}
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return dbgen.GetUserByEmailRow{}, false, nil
+		}
+		return u, false, fmt.Errorf("auth: login lookup: %w", err)
+	}
+	return u, true, nil
 }
 
 func optString(s string) *string {
@@ -106,23 +174,23 @@ func optString(s string) *string {
 
 func int64Ptr(v int64) *int64 { return &v }
 
-// Login authenticates email/password and opens a new session (refresh family).
-func (s *Service) Login(ctx context.Context, email, password string, remember bool, c Client) (*Session, error) {
-	email = normalizeEmail(email)
-	key := limiterKey(c, email)
+// Login authenticates identifier (email or mobile number) + password and
+// opens a new session (refresh family). Unknown users, unparseable
+// identifiers, disabled accounts and wrong passwords all cost one argon2
+// verification and return the same invalid_credentials error. Users flagged
+// must_change_password can log in; the flag is reported in Me.
+func (s *Service) Login(ctx context.Context, identifier, password string, remember bool, c Client) (*Session, error) {
+	kind, norm := parseIdentifier(identifier)
+	key := limiterKey(c, kind, norm)
 	// Rate limit before any DB or argon2 work.
 	if ok, retry := s.limiter.Allow(key); !ok {
 		return nil, apperr.RateLimited(retry)
 	}
 
 	q := dbgen.New(s.pool)
-	u, err := q.GetUserByEmail(ctx, email)
-	found := true
+	u, found, err := lookupLoginUser(ctx, q, kind, norm)
 	if err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("auth: login lookup: %w", err)
-		}
-		found = false
+		return nil, err
 	}
 	usable := found && u.IsActive && u.CanLogin && u.PasswordHash != nil
 	hash := s.dummyHash
@@ -139,7 +207,7 @@ func (s *Service) Login(ctx context.Context, email, password string, remember bo
 			Action:     audit.ActionLoginFailed,
 			EntityType: audit.EntityUser,
 			Summary:    "Percobaan masuk gagal",
-			Changes:    map[string]string{"email": email},
+			Changes:    map[string]string{"identifier": norm, "kind": kind},
 			IP:         c.IP,
 		}
 		if found {
@@ -359,19 +427,21 @@ func loadMe(ctx context.Context, q *dbgen.Queries, userID int64) (*Me, error) {
 		return nil, fmt.Errorf("auth: list permissions: %w", err)
 	}
 	me := &Me{
-		ID:            u.ID,
-		Email:         u.Email,
-		DisplayName:   u.DisplayName,
-		Slug:          u.Slug,
-		Title:         u.Title,
-		Bio:           u.Bio,
-		AvatarMediaID: u.AvatarMediaID,
-		CanLogin:      u.CanLogin,
-		IsActive:      u.IsActive,
-		Roles:         make([]RoleRef, 0, len(roles)),
-		Permissions:   append(make([]string, 0, len(perms)), perms...),
-		LastLoginAt:   httpx.FormatTimePtr(u.LastLoginAt),
-		CreatedAt:     httpx.FormatTime(u.CreatedAt),
+		ID:                 u.ID,
+		Email:              u.Email,
+		Phone:              u.Phone,
+		DisplayName:        u.DisplayName,
+		Slug:               u.Slug,
+		Title:              u.Title,
+		Bio:                u.Bio,
+		AvatarMediaID:      u.AvatarMediaID,
+		CanLogin:           u.CanLogin,
+		IsActive:           u.IsActive,
+		MustChangePassword: u.MustChangePassword,
+		Roles:              make([]RoleRef, 0, len(roles)),
+		Permissions:        append(make([]string, 0, len(perms)), perms...),
+		LastLoginAt:        httpx.FormatTimePtr(u.LastLoginAt),
+		CreatedAt:          httpx.FormatTime(u.CreatedAt),
 	}
 	for _, r := range roles {
 		me.Roles = append(me.Roles, RoleRef{ID: r.ID, Code: r.Code, Name: r.Name})
@@ -380,19 +450,19 @@ func loadMe(ctx context.Context, q *dbgen.Queries, userID int64) (*Me, error) {
 }
 
 // requireActive returns Unauthenticated unless the user exists, is active
-// and can log in.
-func requireActive(ctx context.Context, q *dbgen.Queries, userID int64) error {
+// and can log in. It returns the access row for further checks.
+func requireActive(ctx context.Context, q *dbgen.Queries, userID int64) (dbgen.GetUserAccessRow, error) {
 	acc, err := q.GetUserAccess(ctx, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return apperr.Unauthenticated("")
+			return acc, apperr.Unauthenticated("")
 		}
-		return fmt.Errorf("auth: get access: %w", err)
+		return acc, fmt.Errorf("auth: get access: %w", err)
 	}
 	if !acc.IsActive || !acc.CanLogin {
-		return apperr.Unauthenticated("")
+		return acc, apperr.Unauthenticated("")
 	}
-	return nil
+	return acc, nil
 }
 
 func trimOptional(s *string) *string {
@@ -406,7 +476,8 @@ func trimOptional(s *string) *string {
 	return &t
 }
 
-// UpdateMe updates the caller's own profile.
+// UpdateMe updates the caller's own profile. Users flagged
+// must_change_password get apperr.ErrPasswordChangeRequired.
 func (s *Service) UpdateMe(ctx context.Context, userID int64, in UpdateMeInput, c Client) (*Me, error) {
 	name := strings.TrimSpace(in.DisplayName)
 	if name == "" {
@@ -415,10 +486,14 @@ func (s *Service) UpdateMe(ctx context.Context, userID int64, in UpdateMeInput, 
 	var me *Me
 	err := database.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := dbgen.New(tx)
-		if err := requireActive(ctx, q, userID); err != nil {
+		acc, err := requireActive(ctx, q, userID)
+		if err != nil {
 			return err
 		}
-		_, err := q.UpdateUserProfile(ctx, dbgen.UpdateUserProfileParams{
+		if acc.MustChangePassword {
+			return apperr.PasswordChangeRequired()
+		}
+		_, err = q.UpdateUserProfile(ctx, dbgen.UpdateUserProfileParams{
 			DisplayName:   name,
 			Title:         trimOptional(in.Title),
 			Bio:           trimOptional(in.Bio),
@@ -459,15 +534,20 @@ func parseFamilyID(s string) (pgtype.UUID, bool) {
 	return u, true
 }
 
-// ChangePassword verifies the current password, sets the new one and revokes
-// every other session of the user (the current one is kept).
+// ChangePassword verifies the current password, sets the new one (which must
+// differ from the current one), clears must_change_password, bumps the
+// perm_version and revokes every other session of the user (the current one
+// is kept). The bumped perm_version makes the caller's current access token
+// stale: its next guarded request gets token_expired once and the client
+// refreshes into a token carrying the new version.
 func (s *Service) ChangePassword(ctx context.Context, p Principal, current, next string, c Client) error {
 	keep, ok := parseFamilyID(p.FamilyID)
 	if !ok {
 		return apperr.Unauthenticated("")
 	}
 	q := dbgen.New(s.pool)
-	if err := requireActive(ctx, q, p.UserID); err != nil {
+	acc, err := requireActive(ctx, q, p.UserID)
+	if err != nil {
 		return err
 	}
 	stored, err := q.GetUserPasswordHash(ctx, p.UserID)
@@ -485,14 +565,26 @@ func (s *Service) ChangePassword(ctx context.Context, p Principal, current, next
 	if verr != nil || !match || stored == nil {
 		return apperr.Validation(map[string]string{"current_password": msgWrongPassword})
 	}
+	// current is verified to equal the stored password, so this rejects
+	// re-using it as the new one.
+	if next == current {
+		return apperr.Validation(map[string]string{"new_password": msgSamePassword})
+	}
 	newHash, err := HashPassword(next)
 	if err != nil {
 		return err
 	}
-	return database.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = database.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		qtx := dbgen.New(tx)
-		if err := qtx.UpdateUserPassword(ctx, dbgen.UpdateUserPasswordParams{PasswordHash: &newHash, ID: p.UserID}); err != nil {
+		if err := qtx.UpdateUserPassword(ctx, dbgen.UpdateUserPasswordParams{
+			PasswordHash:       &newHash,
+			MustChangePassword: false,
+			ID:                 p.UserID,
+		}); err != nil {
 			return fmt.Errorf("auth: update password: %w", err)
+		}
+		if _, err := qtx.BumpUserPermVersion(ctx, p.UserID); err != nil {
+			return fmt.Errorf("auth: bump perm version: %w", err)
 		}
 		n, err := qtx.RevokeOtherUserRefreshTokens(ctx, dbgen.RevokeOtherUserRefreshTokensParams{UserID: p.UserID, KeepFamilyID: keep})
 		if err != nil {
@@ -504,10 +596,15 @@ func (s *Service) ChangePassword(ctx context.Context, p Principal, current, next
 			EntityType: audit.EntityUser,
 			EntityID:   int64Ptr(p.UserID),
 			Summary:    "Mengganti kata sandi sendiri; sesi lain dicabut",
-			Changes:    map[string]int64{"revoked_tokens": n},
+			Changes:    map[string]any{"revoked_tokens": n, "forced": acc.MustChangePassword},
 			IP:         c.IP,
 		})
 	})
+	if err != nil {
+		return err
+	}
+	s.inv.Invalidate(p.UserID)
+	return nil
 }
 
 // ListSessions returns the caller's active sessions, newest first.

@@ -21,7 +21,10 @@ type Access struct {
 	IsActive    bool
 	CanLogin    bool
 	PermVersion int32
-	Perms       Set
+	// MustChangePassword blocks every guarded route until the user changes
+	// the initial password (self-service auth endpoints stay usable).
+	MustChangePassword bool
+	Perms              Set
 }
 
 // Loader loads a user's access state. It returns apperr.ErrNotFound when the
@@ -47,10 +50,11 @@ func (l dbLoader) Load(ctx context.Context, userID int64) (Access, error) {
 		return Access{}, fmt.Errorf("rbac: load user permissions: %w", err)
 	}
 	return Access{
-		IsActive:    row.IsActive,
-		CanLogin:    row.CanLogin,
-		PermVersion: row.PermVersion,
-		Perms:       NewSet(codes...),
+		IsActive:           row.IsActive,
+		CanLogin:           row.CanLogin,
+		PermVersion:        row.PermVersion,
+		MustChangePassword: row.MustChangePassword,
+		Perms:              NewSet(codes...),
 	}, nil
 }
 
@@ -91,8 +95,10 @@ func NewCheckerWithLoader(l Loader, ttl time.Duration, now func() time.Time) *Ch
 // Access returns the current access state for p, reloading it when the cache
 // entry is missing, older than the TTL, or has a different perm version than
 // the token. It returns apperr.ErrUnauthenticated when the user is missing,
-// inactive or cannot log in, and apperr.ErrTokenExpired when the token's perm
-// version is outdated (the client must refresh).
+// inactive or cannot log in, apperr.ErrTokenExpired when the token's perm
+// version is outdated (the client must refresh), and
+// apperr.ErrPasswordChangeRequired when the user must change the initial
+// password first (checked last, so a stale token still gets token_expired).
 func (c *Checker) Access(ctx context.Context, p authctx.Principal) (Access, error) {
 	now := c.now()
 	c.mu.RLock()
@@ -125,6 +131,9 @@ func (c *Checker) Access(ctx context.Context, p authctx.Principal) (Access, erro
 	}
 	if e.access.PermVersion != p.PermVersion {
 		return Access{}, apperr.TokenExpired()
+	}
+	if e.access.MustChangePassword {
+		return Access{}, apperr.PasswordChangeRequired()
 	}
 	return e.access, nil
 }

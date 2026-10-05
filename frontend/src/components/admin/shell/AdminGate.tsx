@@ -19,7 +19,12 @@ import { useMe } from '@/lib/api/admin/auth';
 import { qk } from '@/lib/api/admin/keys';
 import type { Me } from '@/lib/api/admin/types';
 import { apiErrorMessage } from '@/lib/forms/serverErrors';
-import { isApiClientError, UNAUTHENTICATED_EVENT } from '@/lib/api/client';
+import {
+  isApiClientError,
+  PASSWORD_CHANGE_REQUIRED_EVENT,
+  UNAUTHENTICATED_EVENT,
+} from '@/lib/api/client';
+import { CHANGE_PASSWORD_PATH } from '@/components/admin/auth/safe-next';
 
 let signingOut = false;
 
@@ -66,6 +71,26 @@ export function AdminGate({ initialMe, children }: AdminGateProps) {
     return () => window.removeEventListener(UNAUTHENTICATED_EVENT, toLogin);
   }, [toLogin]);
 
+  const toChangePassword = useCallback(() => {
+    if (signingOut || redirected.current) return;
+    redirected.current = true;
+    router.replace(CHANGE_PASSWORD_PATH);
+  }, [router]);
+
+  useEffect(() => {
+    window.addEventListener(PASSWORD_CHANGE_REQUIRED_EVENT, toChangePassword);
+    return () =>
+      window.removeEventListener(
+        PASSWORD_CHANGE_REQUIRED_EVENT,
+        toChangePassword,
+      );
+  }, [toChangePassword]);
+
+  const mustChange = me.data?.must_change_password === true;
+  useEffect(() => {
+    if (mustChange) toChangePassword();
+  }, [mustChange, toChangePassword]);
+
   const unauthenticated =
     me.isError && isApiClientError(me.error) && me.error.status === 401;
 
@@ -73,6 +98,7 @@ export function AdminGate({ initialMe, children }: AdminGateProps) {
     if (unauthenticated) toLogin();
   }, [unauthenticated, toLogin]);
 
+  if (mustChange) return <ShellSkeleton />;
   if (me.data) return <>{children}</>;
   if (me.isError && !unauthenticated) {
     return (

@@ -26,16 +26,30 @@ import { Spinner } from '@/components/ui/shadcn/spinner';
 import { useLogin } from '@/lib/api/admin/auth';
 import { isApiClientError, refreshSession } from '@/lib/api/client';
 import { apiErrorMessage, applyServerErrors } from '@/lib/forms/serverErrors';
-import { email, MSG } from '@/lib/forms/schemas';
+import { MSG } from '@/lib/forms/schemas';
 import { useZodForm } from '@/lib/forms/useZodForm';
+import { normalizePhone } from '@/lib/phone';
+
+import { postLoginPath } from './safe-next';
 
 const schema = z.object({
-  email,
+  identifier: z
+    .string()
+    .trim()
+    .min(1, MSG.required)
+    .max(254, MSG.maxChars(254))
+    .refine(
+      (v) =>
+        v.includes('@')
+          ? z.string().email().safeParse(v).success
+          : normalizePhone(v) !== null,
+      'Masukkan email atau nomor HP yang valid.',
+    ),
   password: z.string().min(1, MSG.required),
   remember: z.boolean(),
 });
 
-const INVALID_CREDENTIALS = 'Email atau kata sandi salah.';
+const INVALID_CREDENTIALS = 'Email, nomor HP, atau kata sandi salah.';
 
 const noopSubscribe = () => () => {};
 
@@ -79,7 +93,7 @@ export function LoginForm({ next, tryRefresh = false }: LoginFormProps) {
   const hydrated = useHydrated();
 
   const form = useZodForm(schema, {
-    defaultValues: { email: '', password: '', remember: false },
+    defaultValues: { identifier: '', password: '', remember: false },
   });
 
   useEffect(() => {
@@ -114,9 +128,9 @@ export function LoginForm({ next, tryRefresh = false }: LoginFormProps) {
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await login.mutateAsync(values);
+      const me = await login.mutateAsync(values);
       setRedirecting(true);
-      router.replace(next);
+      router.replace(postLoginPath(me, next));
     } catch (err) {
       form.resetField('password', { defaultValue: '' });
       if (isApiClientError(err)) {
@@ -158,15 +172,16 @@ export function LoginForm({ next, tryRefresh = false }: LoginFormProps) {
 
         <Controller
           control={form.control}
-          name="email"
+          name="identifier"
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="login-email">Email</FieldLabel>
+              <FieldLabel htmlFor="login-identifier">
+                Email atau nomor HP
+              </FieldLabel>
               <Input
                 {...field}
-                id="login-email"
-                type="email"
-                inputMode="email"
+                id="login-identifier"
+                type="text"
                 autoComplete="username"
                 autoFocus
                 spellCheck={false}

@@ -20,6 +20,7 @@ import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { usePermission } from '@/components/admin/shell/PermissionGate';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { Badge } from '@/components/ui/shadcn/badge';
+import { formatPhone } from '@/lib/phone';
 import { Button } from '@/components/ui/shadcn/button';
 import {
   DropdownMenu,
@@ -182,19 +183,28 @@ export function UsersView() {
             {row.title ? (
               <span className="text-muted-foreground text-xs">{row.title}</span>
             ) : null}
-            {row.email ? (
+            {row.email || row.phone ? (
               <span className="text-muted-foreground text-xs md:hidden">
-                {row.email}
+                {row.email ?? formatPhone(row.phone)}
               </span>
+            ) : null}
+            {row.must_change_password ? (
+              <Badge
+                variant="outline"
+                className="mt-1 w-fit text-xs font-normal"
+              >
+                Wajib ganti sandi
+              </Badge>
             ) : null}
           </div>
         );
       },
     }),
-    helper.accessor('email', {
-      header: 'Email',
+    helper.accessor((row) => row.email ?? formatPhone(row.phone), {
+      id: 'identity',
+      header: 'Email / nomor HP',
       cell: (ctx) =>
-        ctx.getValue() ?? <span className="text-muted-foreground">—</span>,
+        ctx.getValue() || <span className="text-muted-foreground">—</span>,
       meta: { hideBelow: 'md' },
     }),
     helper.accessor('roles', {
@@ -301,7 +311,7 @@ export function UsersView() {
             search={{
               value: search,
               onChange: setSearch,
-              placeholder: 'Cari nama atau email…',
+              placeholder: 'Cari nama, email, atau nomor HP…',
             }}
           >
             <ToggleGroup

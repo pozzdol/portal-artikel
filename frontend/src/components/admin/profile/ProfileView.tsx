@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 
 import { useMe } from '@/lib/api/admin/auth';
+import { formatPhone } from '@/lib/phone';
 
 import { PasswordForm } from './PasswordForm';
 import { ProfileForm } from './ProfileForm';
@@ -40,7 +41,7 @@ export function ProfileView() {
           Profil saya
         </h1>
         <p className="text-meta mt-1">
-          {me.email}
+          {me.email ?? formatPhone(me.phone)}
           {me.roles.length
             ? ` (${me.roles.map((r) => r.name).join(', ')})`
             : ''}

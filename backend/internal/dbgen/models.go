@@ -276,6 +276,10 @@ type User struct {
 	PermVersion   int32      `json:"perm_version"`
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
+	// User must change the password before using the admin dashboard.
+	MustChangePassword bool `json:"must_change_password"`
+	// Normalized Indonesian mobile number without +62/0 prefix (^8[0-9]{8,11}$).
+	Phone *string `json:"phone"`
 }
 
 type UserRole struct {

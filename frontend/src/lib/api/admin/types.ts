@@ -89,6 +89,10 @@ export type RoleRef = { id: number; code: string; name: string };
 export type Me = {
   id: number;
   email: string | null;
+  /** Normalized national number (8123456789), see lib/phone.ts. */
+  phone: string | null;
+  /** True until the user replaces an admin-issued password. */
+  must_change_password: boolean;
   display_name: string;
   slug: string;
   title: string | null;
@@ -104,7 +108,8 @@ export type Me = {
 };
 
 export type LoginInput = {
-  email: string;
+  /** Email or phone number. */
+  identifier: string;
   password: string;
   remember?: boolean;
 };
@@ -139,6 +144,8 @@ export type SessionInfo = {
 export type UserItem = {
   id: number;
   email: string | null;
+  phone: string | null;
+  must_change_password: boolean;
   display_name: string;
   slug: string;
   title: string | null;
@@ -164,6 +171,9 @@ export type UserListParams = PageParams & {
 
 export type CreateUserInput = {
   email?: string | null;
+  /** Any spelling; stored normalized. */
+  phone?: string | null;
+  must_change_password?: boolean;
   password?: string | null;
   display_name: string;
   slug?: string | null;
@@ -178,6 +188,8 @@ export type CreateUserInput = {
 /** PUT /users/{id}: omitted/null pointer fields keep the current value; role_ids [] clears. */
 export type UpdateUserInput = {
   email?: string | null;
+  phone?: string | null;
+  must_change_password?: boolean;
   password?: string | null;
   display_name: string;
   slug?: string | null;
@@ -189,7 +201,10 @@ export type UpdateUserInput = {
   role_ids?: number[] | null;
 };
 
-export type ResetPasswordInput = { new_password: string };
+export type ResetPasswordInput = {
+  new_password: string;
+  must_change_password?: boolean;
+};
 
 /** GET /admin/authors (plain array). */
 export type AuthorOption = {

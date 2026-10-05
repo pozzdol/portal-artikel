@@ -19,4 +19,6 @@ func TestKindsMatch(t *testing.T) {
 	assert.Equal(t, "not found", NotFound().Error())
 	assert.Equal(t, 5*time.Second, RateLimited(5*time.Second).RetryAfter)
 	assert.Equal(t, "x", Validation(map[string]string{"a": "x"}).Fields["a"])
+	assert.True(t, errors.Is(fmt.Errorf("x: %w", PasswordChangeRequired()), ErrPasswordChangeRequired))
+	assert.False(t, errors.Is(PasswordChangeRequired(), ErrForbidden))
 }

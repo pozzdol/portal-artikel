@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -57,23 +58,29 @@ func principal(r *http.Request) (Principal, bool) {
 }
 
 func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
-	// Decode without tags first so the email can be normalized before
-	// validation (leading/trailing spaces, upper case).
+	// Decode without tags first so the identifier can be trimmed before
+	// validation. "email" is a deprecated alias of "identifier"; a non-empty
+	// identifier wins.
 	var raw struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-		Remember bool   `json:"remember"`
+		Identifier string `json:"identifier"`
+		Email      string `json:"email"`
+		Password   string `json:"password"`
+		Remember   bool   `json:"remember"`
 	}
 	if err := httpx.Decode(r, &raw); err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
-	req := loginRequest{Email: normalizeEmail(raw.Email), Password: raw.Password, Remember: raw.Remember}
+	ident := strings.TrimSpace(raw.Identifier)
+	if ident == "" {
+		ident = strings.TrimSpace(raw.Email)
+	}
+	req := loginRequest{Identifier: ident, Password: raw.Password, Remember: raw.Remember}
 	if err := httpx.Validate(req); err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
-	sess, err := h.svc.Login(r.Context(), req.Email, req.Password, req.Remember, client(r))
+	sess, err := h.svc.Login(r.Context(), req.Identifier, req.Password, req.Remember, client(r))
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return

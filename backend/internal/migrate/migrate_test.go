@@ -79,11 +79,11 @@ func TestUpDownUp(t *testing.T) {
 
 	v, err := Version(ctx, pool)
 	require.NoError(t, err)
-	require.EqualValues(t, 10, v)
+	require.EqualValues(t, 12, v)
 
 	var status bytes.Buffer
 	require.NoError(t, Status(ctx, pool, &status))
-	require.Contains(t, status.String(), "00010_seed_rbac.sql")
+	require.Contains(t, status.String(), "00012_users_phone.sql")
 	require.NotContains(t, status.String(), "pending")
 
 	// Smoke-test constraints and the search_vector trigger.
@@ -112,9 +112,19 @@ func TestUpDownUp(t *testing.T) {
 	require.Equal(t, 25, countTables())
 	require.Equal(t, 22, countRows("permissions"))
 
-	// One step down and back up.
+	// One step down (00012 drops users.phone) and back up.
+	hasPhone := func() bool {
+		var ok bool
+		require.NoError(t, pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM information_schema.columns
+			WHERE table_schema = $1 AND table_name = 'users' AND column_name = 'phone')`, schema).Scan(&ok))
+		return ok
+	}
 	require.NoError(t, Down(ctx, pool))
-	require.Equal(t, 0, countRows("permissions"))
+	require.False(t, hasPhone())
+	v, err = Version(ctx, pool)
+	require.NoError(t, err)
+	require.EqualValues(t, 11, v)
 	require.NoError(t, Up(ctx, pool))
+	require.True(t, hasPhone())
 	require.Equal(t, 22, countRows("permissions"))
 }

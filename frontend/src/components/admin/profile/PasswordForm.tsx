@@ -58,8 +58,21 @@ const FIELDS = [
   },
 ] as const;
 
+export type PasswordFormProps = {
+  /** Runs after a successful change instead of the default toast. */
+  onSuccess?: () => void | Promise<void>;
+  submitLabel?: string;
+  autoFocus?: boolean;
+  successMessage?: string;
+};
+
 /** PUT /auth/me/password; other sessions are signed out by the server. */
-export function PasswordForm() {
+export function PasswordForm({
+  onSuccess,
+  submitLabel = 'Ganti kata sandi',
+  autoFocus = false,
+  successMessage = 'Kata sandi diganti. Sesi di perangkat lain telah dikeluarkan.',
+}: PasswordFormProps = {}) {
   const change = useChangePassword();
   const form = useZodForm(schema, { defaultValues: EMPTY });
 
@@ -68,9 +81,8 @@ export function PasswordForm() {
       try {
         await change.mutateAsync({ current_password, new_password });
         form.reset(EMPTY);
-        toast.success(
-          'Kata sandi diganti. Sesi di perangkat lain telah dikeluarkan.',
-        );
+        toast.success(successMessage);
+        await onSuccess?.();
       } catch (err) {
         applyServerErrors(form, err);
       }
@@ -80,7 +92,7 @@ export function PasswordForm() {
   return (
     <form method="post" onSubmit={onSubmit} noValidate className="max-w-md">
       <FieldGroup className="gap-5">
-        {FIELDS.map((f) => (
+        {FIELDS.map((f, i) => (
           <Controller
             key={f.name}
             control={form.control}
@@ -92,6 +104,7 @@ export function PasswordForm() {
                   {...field}
                   id={`pw-${f.name}`}
                   type="password"
+                  autoFocus={autoFocus && i === 0}
                   autoComplete={f.autoComplete}
                   aria-invalid={fieldState.invalid}
                 />
@@ -106,7 +119,7 @@ export function PasswordForm() {
         <div>
           <Button type="submit" disabled={change.isPending}>
             {change.isPending ? <Spinner /> : null}
-            Ganti kata sandi
+            {submitLabel}
           </Button>
         </div>
       </FieldGroup>

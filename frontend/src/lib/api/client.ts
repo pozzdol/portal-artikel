@@ -19,6 +19,10 @@ export const CSRF_HEADER = 'X-CSRF-Token';
 /** Dispatched on `window` when the session is gone (refresh failed / 401 unauthenticated). */
 export const UNAUTHENTICATED_EVENT = 'admin:unauthenticated';
 
+/** Dispatched when the API answers 403 password_change_required (forced change pending). */
+export const PASSWORD_CHANGE_REQUIRED_EVENT = 'admin:password-change-required';
+const PASSWORD_CHANGE_CODE = 'password_change_required';
+
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export type QueryValue =
@@ -178,6 +182,15 @@ export function notifyUnauthenticated(): void {
   }
 }
 
+export function notifyPasswordChangeRequired(): void {
+  if (
+    typeof window !== 'undefined' &&
+    typeof window.dispatchEvent === 'function'
+  ) {
+    window.dispatchEvent(new Event(PASSWORD_CHANGE_REQUIRED_EVENT));
+  }
+}
+
 function unauthenticatedError(): ApiClientError {
   return new ApiClientError(401, 'unauthenticated', UNAUTH_MESSAGE);
 }
@@ -297,6 +310,9 @@ export async function request<T>(
       notifyUnauthenticated();
       throw err.code === 'token_expired' ? unauthenticatedError() : err;
     }
+    if (res.status === 403 && err.code === PASSWORD_CHANGE_CODE) {
+      notifyPasswordChangeRequired();
+    }
     throw err;
   }
 
@@ -394,6 +410,9 @@ export async function upload<T>(
   if (r.status < 200 || r.status >= 300) {
     const err = errorFromBody(r.status, r.body, r.retryAfter);
     if (r.status === 401) notifyUnauthenticated();
+    if (r.status === 403 && err.code === PASSWORD_CHANGE_CODE) {
+      notifyPasswordChangeRequired();
+    }
     throw err;
   }
   const env = (r.body ?? {}) as { data?: T; meta?: ListMeta };

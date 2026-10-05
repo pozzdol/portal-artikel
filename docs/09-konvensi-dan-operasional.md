@@ -61,6 +61,49 @@ bun run start         # http://localhost:3000
 
 Setiap mengubah file di `backend/db/queries/*.sql`, jalankan `make sqlc` (hasilnya di-commit).
 
+### Membuat pengguna admin tambahan
+
+```bash
+cd /opt/portal-berita/backend
+
+# Prompt interaktif untuk password (aman, input tersembunyi)
+go run ./cmd/tool create-user \
+  --email user@almaidah.id \
+  --name "Nama Pengguna" \
+  --role admin \
+  --password-stdin
+
+# Atau dengan nomor HP (boleh format 0821…, 62…, atau +62…)
+go run ./cmd/tool create-user \
+  --phone 0821234567 \
+  --name "Nama Pengguna" \
+  --role admin \
+  --password-stdin
+
+# Tandai wajib ganti password pada login pertama
+go run ./cmd/tool create-user \
+  --email user@almaidah.id \
+  --name "Nama Pengguna" \
+  --role admin \
+  --must-change \
+  --password-stdin
+
+# Dari environment variable (otomasi)
+export TEMP_PASSWORD="kataSandiTemporary123"
+go run ./cmd/tool create-user \
+  --email user@almaidah.id \
+  --name "Nama Pengguna" \
+  --role admin \
+  --password-env TEMP_PASSWORD
+```
+
+**Penting:**
+- **Password tidak boleh ditulis di command line.** Gunakan `--password-stdin` (prompt tersembunyi) atau `--password-env VAR`.
+- Password harus min 10 karakter (atau 8 jika `--must-change`).
+- Nomor HP diterima dalam bentuk apa pun (0821…, 62…, +62…) dan disimpan ternormalisasi (+62…).
+- Email dan nomor HP keduanya opsional, tetapi minimal satu harus diisi (untuk login user).
+- Role harus sudah ada di database (default: `admin`, `super_admin`).
+
 ## 3. Konvensi kode
 
 ### Umum

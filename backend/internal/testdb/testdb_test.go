@@ -53,7 +53,36 @@ func TestNewAndSuperAdmin(t *testing.T) {
 	a, err := q.GetUserByID(ctx, author)
 	require.NoError(t, err)
 	assert.Nil(t, a.Email)
+	assert.Nil(t, a.Phone)
 	assert.False(t, a.CanLogin)
+	assert.False(t, a.MustChangePassword)
+
+	// A login user may be identified by phone only.
+	phoneUser := CreateUser(t, pool, UserOpts{
+		Phone: "8123456789", Password: "12345678", DisplayName: "Pengguna HP",
+		CanLogin: true, IsActive: true, MustChangePassword: true,
+	})
+	p, err := q.GetUserByPhone(ctx, "8123456789")
+	require.NoError(t, err)
+	assert.Equal(t, phoneUser, p.ID)
+	assert.True(t, p.MustChangePassword)
+	acc, err := q.GetUserAccess(ctx, phoneUser)
+	require.NoError(t, err)
+	assert.True(t, acc.MustChangePassword)
+	require.NoError(t, q.UpdateUserPassword(ctx, dbgen.UpdateUserPasswordParams{ID: phoneUser, PasswordHash: p.PasswordHash, MustChangePassword: false}))
+	acc, err = q.GetUserAccess(ctx, phoneUser)
+	require.NoError(t, err)
+	assert.False(t, acc.MustChangePassword)
+	qs := "812345"
+	found, err := q.ListUsers(ctx, dbgen.ListUsersParams{Q: &qs, Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, found, 1)
+	assert.Equal(t, phoneUser, found[0].ID)
+	require.NoError(t, q.ClearUserCredentials(ctx, phoneUser))
+	p2, err := q.GetUserByID(ctx, phoneUser)
+	require.NoError(t, err)
+	assert.Nil(t, p2.Phone)
+	assert.False(t, p2.CanLogin)
 }
 
 // TestConstraintNames pins the constraint names services map to field errors.
@@ -73,6 +102,25 @@ func TestConstraintNames(t *testing.T) {
 	c, ok = database.UniqueViolation(err)
 	require.True(t, ok, "%v", err)
 	assert.Equal(t, "users_slug_key", c)
+
+	phone := "8123456789"
+	CreateUser(t, pool, UserOpts{Phone: phone, DisplayName: "Pemilik HP", IsActive: true})
+	_, err = q.CreateUser(ctx, dbgen.CreateUserParams{Phone: &phone, DisplayName: "Z", Slug: "z-1", IsActive: true})
+	c, ok = database.UniqueViolation(err)
+	require.True(t, ok, "%v", err)
+	assert.Equal(t, "users_phone_key", c)
+
+	bad := "08123456789" // not normalized
+	_, err = q.CreateUser(ctx, dbgen.CreateUserParams{Phone: &bad, DisplayName: "B", Slug: "b-1", IsActive: true})
+	c, ok = database.CheckViolation(err)
+	require.True(t, ok, "%v", err)
+	assert.Equal(t, "users_phone_format", c)
+
+	hash := HashPassword(t, "Kata-Sandi-Awal")
+	_, err = q.CreateUser(ctx, dbgen.CreateUserParams{PasswordHash: &hash, DisplayName: "L", Slug: "l-1", CanLogin: true, IsActive: true})
+	c, ok = database.CheckViolation(err)
+	require.True(t, ok, "%v", err)
+	assert.Equal(t, "users_login_requires_credentials", c)
 
 	_, err = q.CreateRole(ctx, dbgen.CreateRoleParams{Code: "admin", Name: "Dup"})
 	c, ok = database.UniqueViolation(err)
