@@ -181,6 +181,25 @@ di kedua contoh) **atau** otomatis dikirim oleh aplikasi Next.js sendiri saat
 `NEXT_PUBLIC_SITE_URL` berawalan `https://` — jangan set keduanya secara
 berbeda (nilai `max-age` harus konsisten bila keduanya aktif).
 
+### Varian: Cloudflare Tunnel (staging)
+
+Bila TLS diterminasi di edge Cloudflare dan `cloudflared` satu-satunya jalur
+masuk (tanpa certbot, tanpa port publik):
+
+- Alur: Cloudflare → `cloudflared` → Nginx `127.0.0.1:<port>` → Next
+  `127.0.0.1:3000` → Go `127.0.0.1:8081`. Semua listener hanya di loopback
+  (`HTTP_ADDR=127.0.0.1:8081`, `next start -H 127.0.0.1`).
+- Vhost Nginx cukup satu blok `listen 127.0.0.1:<port>` tanpa TLS; set
+  `X-Forwarded-For` ke `CF-Connecting-IP` (bukan append), karena edge
+  Cloudflare *menambahkan* ke XFF milik klien. `TRUSTED_PROXIES` tetap default
+  loopback.
+- `COOKIE_SECURE=true`, `PUBLIC_SITE_URL`/`NEXT_PUBLIC_SITE_URL` = URL https
+  publik (rebuild frontend setelah mengubahnya), `APP_ENV=staging`.
+- **Jangan** sajikan `next dev` lewat tunnel/CDN: nama chunk dev tidak
+  ber-hash dan Browser Cache TTL Cloudflare menahannya berjam-jam, sehingga
+  hidrasi gagal (tombol mati, form login terkirim native). Bila terpaksa,
+  isi `NEXT_ALLOWED_DEV_ORIGINS` dengan hostname tunnel.
+
 ## 6. Runbook
 
 ### Update / redeploy

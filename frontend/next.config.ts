@@ -48,7 +48,16 @@ const securityHeaders = [
     : []),
 ];
 
+// Hostnames (no scheme/port) allowed to load `next dev` resources such as the
+// HMR socket. Only for running the dev server behind a tunnel; production
+// (`next start`) ignores it.
+const allowedDevOrigins = (process.env.NEXT_ALLOWED_DEV_ORIGINS ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 const nextConfig: NextConfig = {
+  allowedDevOrigins,
   async headers() {
     return [{ source: '/(.*)', headers: securityHeaders }];
   },

@@ -32,6 +32,7 @@
 | `API_INTERNAL_URL` | `http://127.0.0.1:8080` | Dipakai server Next.js dan rewrites |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | Canonical, OG, sitemap |
 | `REVALIDATE_SECRET` | sama dengan backend | Harus cocok dengan `backend/.env` untuk verifikasi webhook |
+| `NEXT_ALLOWED_DEV_ORIGINS` | `staging.example.com` | Opsional, hanya `next dev` lewat tunnel/domain: hostname (dipisah koma) yang boleh memuat resource dev |
 
 `.env` dan `.env.local` **tidak di-commit**. Yang di-commit hanya `.env.example` dengan placeholder.
 
