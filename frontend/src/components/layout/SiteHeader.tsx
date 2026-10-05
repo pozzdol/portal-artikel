@@ -32,7 +32,7 @@ export function SiteHeader({ site }: { site: SitePayload }) {
 
   return (
     <header className="bg-paper border-line sticky top-0 z-50 border-b">
-      <Container className="flex flex-nowrap items-center justify-between gap-3 py-[18px] sm:gap-6">
+      <Container className="flex flex-nowrap items-center justify-between gap-3 py-2.5 sm:gap-6 lg:py-[18px]">
         <Link
           href="/"
           className="flex min-w-0 items-center gap-3.5 sm:shrink-0"
@@ -42,7 +42,7 @@ export function SiteHeader({ site }: { site: SitePayload }) {
             <span className="font-serif text-[22px] font-bold tracking-[0.02em]">
               {name}
             </span>
-            <span className="text-meta text-[10.5px] font-medium tracking-[0.08em] uppercase sm:whitespace-nowrap">
+            <span className="text-meta hidden text-[12px] font-medium tracking-[0.08em] uppercase sm:block sm:whitespace-nowrap">
               {tagline}
             </span>
           </span>
@@ -50,7 +50,7 @@ export function SiteHeader({ site }: { site: SitePayload }) {
 
         <NavLinks items={navItems} />
 
-        <div className="flex shrink-0 flex-nowrap items-center gap-2 sm:gap-3.5">
+        <div className="flex shrink-0 flex-nowrap items-center gap-2 lg:gap-3">
           {showDate ? <TodayLabel /> : null}
           <HeaderControls
             navItems={navItems}
@@ -63,7 +63,7 @@ export function SiteHeader({ site }: { site: SitePayload }) {
             <Button
               asChild
               variant="outline"
-              className="border-ink hidden h-auto rounded-[8px] bg-transparent px-[18px] py-[9px] text-[13px] font-medium whitespace-nowrap shadow-none hover:bg-transparent sm:inline-flex dark:bg-transparent dark:hover:bg-transparent"
+              className="border-ink hidden h-auto rounded-[8px] bg-transparent px-[18px] py-[9px] text-[13px] font-medium whitespace-nowrap shadow-none hover:bg-transparent lg:inline-flex dark:bg-transparent dark:hover:bg-transparent"
             >
               <Link href="/admin/login">{loginLabel}</Link>
             </Button>

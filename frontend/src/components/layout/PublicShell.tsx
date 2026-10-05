@@ -33,14 +33,16 @@ export async function PublicShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <>
+    <div className="flex min-h-dvh flex-col">
       <SkipLink />
       <AnnouncementBar items={site.announcements} />
       <SiteHeader site={site} />
-      <main id="konten">{children}</main>
+      <main id="konten" className="flex-1">
+        {children}
+      </main>
       <SiteFooter site={site} />
       <JsonLd data={organizationJsonLd} />
       <JsonLd data={websiteJsonLd} />
-    </>
+    </div>
   );
 }

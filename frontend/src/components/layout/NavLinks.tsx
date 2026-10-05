@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/shadcn/dropdown-menu';
 
-const GAP = 22;
+const GAP = 18;
 
 function isActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/';
@@ -28,8 +28,8 @@ function NavLink({ item, active }: { item: MenuItem; active: boolean }) {
       rel={item.open_new_tab ? 'noopener noreferrer' : undefined}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'border-b-2 pb-1',
-        active ? 'border-gold' : 'hover:border-line border-transparent',
+        'inline-flex min-h-9 items-center border-b-2 pt-1 pb-1',
+        active ? 'border-gold' : 'hover:border-gold/60 border-transparent',
       )}
     >
       {item.label}
@@ -100,11 +100,11 @@ export function NavLinks({ items }: { items: MenuItem[] }) {
   return (
     <div
       ref={containerRef}
-      className="relative hidden min-w-0 flex-1 items-center justify-center overflow-hidden xl:flex"
+      className="relative hidden min-w-0 flex-1 items-center justify-center overflow-hidden lg:flex"
     >
       <nav
         aria-label="Navigasi utama"
-        className="flex flex-nowrap items-center gap-[22px] text-[14.5px] font-medium whitespace-nowrap"
+        className="flex flex-nowrap items-center gap-[18px] text-[14.5px] font-medium whitespace-nowrap"
       >
         {visibleItems.map((item) => (
           <NavLink
@@ -119,10 +119,10 @@ export function NavLinks({ items }: { items: MenuItem[] }) {
               <button
                 type="button"
                 className={cn(
-                  'flex items-center gap-1 border-b-2 pb-1 outline-none',
+                  'flex min-h-9 items-center gap-1 border-b-2 pt-1 pb-1 outline-none',
                   overflowActive
                     ? 'border-gold'
-                    : 'hover:border-line border-transparent',
+                    : 'hover:border-gold/60 border-transparent',
                 )}
               >
                 Lainnya
@@ -165,7 +165,7 @@ export function NavLinks({ items }: { items: MenuItem[] }) {
           many items fit. Never visible, never interactive. */}
       <div
         aria-hidden
-        className="pointer-events-none invisible absolute top-0 left-0 flex flex-nowrap items-center gap-[22px] text-[14.5px] font-medium whitespace-nowrap"
+        className="pointer-events-none invisible absolute top-0 left-0 flex flex-nowrap items-center gap-[18px] text-[14.5px] font-medium whitespace-nowrap"
       >
         {items.map((item, index) => (
           <div
@@ -179,7 +179,7 @@ export function NavLinks({ items }: { items: MenuItem[] }) {
         ))}
         <div
           ref={triggerRef}
-          className="flex items-center gap-1 border-b-2 pb-1"
+          className="flex min-h-9 items-center gap-1 border-b-2 pt-1 pb-1"
         >
           Lainnya
           <ChevronDown className="size-3.5" />

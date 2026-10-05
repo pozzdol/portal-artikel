@@ -117,7 +117,7 @@ export function SocialIcon({
       aria-label={label}
       target="_blank"
       rel="noopener noreferrer"
-      className="border-line text-ink flex h-[34px] w-[34px] items-center justify-center rounded-full border"
+      className="border-line text-ink flex size-11 items-center justify-center rounded-full border lg:size-[34px]"
     >
       <Icon />
     </a>

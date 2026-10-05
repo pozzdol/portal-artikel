@@ -7,7 +7,7 @@ import { MobileMenu } from './MobileMenu';
 import { SearchOverlay } from './SearchOverlay';
 
 const iconButtonClass =
-  'h-9 w-9 rounded-[8px] border-line bg-transparent shadow-none hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent';
+  'size-11 lg:size-9 rounded-[8px] border-line bg-transparent shadow-none hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent';
 
 /**
  * Single client island holding the state for both the search overlay and the
@@ -29,7 +29,7 @@ export function HeaderControls({
 
   return (
     <>
-      <div className="flex items-center gap-3.5">
+      <div className="flex items-center gap-2 lg:gap-3">
         {showSearch ? (
           <Button
             type="button"
@@ -60,7 +60,7 @@ export function HeaderControls({
             aria-label="Buka menu navigasi"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(true)}
-            className={`${iconButtonClass} xl:hidden`}
+            className={`${iconButtonClass} lg:hidden`}
           >
             <svg
               width="16"
@@ -86,6 +86,7 @@ export function HeaderControls({
         items={navItems}
         showLoginButton={showLoginButton}
         loginLabel={loginLabel}
+        showSearch={showSearch}
       />
     </>
   );

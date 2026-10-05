@@ -29,7 +29,7 @@ export function TodayLabel() {
   );
 
   return (
-    <span className="text-meta hidden text-[13px] font-medium whitespace-nowrap 2xl:inline">
+    <span className="text-meta hidden text-[12.5px] font-medium whitespace-nowrap 2xl:inline">
       {label}
     </span>
   );

@@ -63,7 +63,7 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={isDark ? 'Mode terang' : 'Mode gelap'}
       className={cn(
-        'border-line h-9 w-9 rounded-[8px] bg-transparent shadow-none hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent',
+        'border-line size-11 rounded-[8px] bg-transparent shadow-none hover:bg-transparent lg:size-9 dark:bg-transparent dark:hover:bg-transparent',
       )}
     >
       <svg
