@@ -53,7 +53,7 @@ export default async function TokohDetailPage(
   };
 
   return (
-    <Container className="py-14">
+    <Container className="py-8 sm:py-12 lg:py-16">
       <JsonLd data={jsonLd} />
       <Breadcrumb
         items={[
@@ -62,11 +62,12 @@ export default async function TokohDetailPage(
           { label: person.name },
         ]}
       />
-      <div className="mt-8 grid grid-cols-1 gap-12 lg:grid-cols-[320px_1fr]">
+      <div className="mt-8 grid gap-8 md:grid-cols-[240px_1fr] lg:grid-cols-[320px_1fr] lg:gap-12">
         <ImageBox
           media={person.photo}
           ratio="3/4"
-          sizes="(min-width: 1024px) 320px, 60vw"
+          sizes="(min-width:1024px) 320px, (min-width:768px) 240px, 280px"
+          className="mx-auto w-full max-w-[280px] md:max-w-none"
           alt={person.name}
           preload
         />
@@ -74,7 +75,7 @@ export default async function TokohDetailPage(
           <Eyebrow size="md" className="mb-3">
             {person.role_title}
           </Eyebrow>
-          <h1 className="text-ink font-serif text-[36px] leading-[1.12] font-semibold tracking-[-0.01em] lg:text-[52px]">
+          <h1 className="text-ink font-serif text-[32px] leading-[1.12] font-semibold tracking-[-0.01em] sm:text-[36px] lg:text-[44px] 2xl:text-[52px]">
             {person.name}
           </h1>
           {person.class_year ? (
@@ -82,10 +83,10 @@ export default async function TokohDetailPage(
               Angkatan {person.class_year}
             </div>
           ) : null}
-          <p className="text-soft mt-5 max-w-[640px] text-[17px] leading-[1.7]">
+          <p className="text-soft mt-5 max-w-prose text-[17px] leading-[1.7] font-medium">
             {person.short_bio}
           </p>
-          <div className="mt-8">
+          <div className="mt-8 max-w-prose">
             <Prose html={person.story_html} />
           </div>
         </div>

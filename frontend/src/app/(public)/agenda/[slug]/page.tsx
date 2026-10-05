@@ -1,3 +1,4 @@
+import { CalendarDays, Clock3, MapPin } from 'lucide-react';
 import type { Metadata } from 'next';
 
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
@@ -87,30 +88,39 @@ export default async function AgendaDetailPage(
   };
 
   return (
-    <Container className="py-14">
+    <Container className="py-8 sm:py-12 lg:py-16">
       <JsonLd data={jsonLd} />
-      <Breadcrumb
-        items={[
-          { label: 'Beranda', href: '/' },
-          { label: 'Agenda', href: '/agenda' },
-          { label: event.title },
-        ]}
-      />
-      <div className="mx-auto mt-6 max-w-[840px]">
+      <div className="mx-auto max-w-[840px]">
+        <Breadcrumb
+          items={[
+            { label: 'Beranda', href: '/' },
+            { label: 'Agenda', href: '/agenda' },
+            { label: event.title },
+          ]}
+        />
+        <div className="mt-5 sm:mt-6" />
         <Eyebrow size="md" className="mb-3">
           Agenda
         </Eyebrow>
-        <h1 className="text-ink font-serif text-[36px] leading-[1.12] font-semibold tracking-[-0.01em] lg:text-[52px]">
+        <h1 className="text-ink font-serif text-[32px] leading-[1.12] font-semibold tracking-[-0.01em] sm:text-[36px] lg:text-[44px] 2xl:text-[52px]">
           {event.title}
         </h1>
-        <div className="text-meta mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13.5px] font-medium">
-          <span>{formatDateWeekday(event.starts_at)}</span>
-          <span aria-hidden="true">•</span>
-          <span>
+        <div className="text-meta mt-5 flex flex-col gap-2 text-[13.5px] font-medium sm:flex-row sm:flex-wrap sm:gap-x-5">
+          <span className="inline-flex items-center gap-2">
+            <CalendarDays
+              className="text-gold-strong size-4"
+              aria-hidden="true"
+            />
+            {formatDateWeekday(event.starts_at)}
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <Clock3 className="text-gold-strong size-4" aria-hidden="true" />
             {timeRange(event.starts_at, event.ends_at, event.is_all_day)}
           </span>
-          <span aria-hidden="true">•</span>
-          <span>{event.location_name}</span>
+          <span className="inline-flex items-center gap-2">
+            <MapPin className="text-gold-strong size-4" aria-hidden="true" />
+            {event.location_name}
+          </span>
         </div>
 
         {event.cover ? (
@@ -145,7 +155,7 @@ export default async function AgendaDetailPage(
               href={event.maps_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="border-gold text-ink mt-3 inline-block border-b pb-0.5 text-[12.5px] font-semibold"
+              className="border-gold text-ink mt-3 inline-flex min-h-11 items-center border-b pb-0.5 text-[12.5px] font-semibold lg:min-h-0"
             >
               Buka di Google Maps ↗
             </a>
@@ -157,7 +167,7 @@ export default async function AgendaDetailPage(
             href={event.registration_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-gold text-on-gold mt-9 inline-flex items-center rounded-[8px] px-[28px] py-[14px] text-[14px] font-semibold"
+            className="bg-gold text-on-gold mt-9 inline-flex min-h-11 w-full items-center justify-center rounded-[8px] px-[28px] py-[14px] text-[14px] font-semibold sm:w-auto"
           >
             Daftar
           </a>

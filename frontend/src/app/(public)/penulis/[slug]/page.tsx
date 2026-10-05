@@ -77,9 +77,9 @@ export default async function AuthorPage({
   };
 
   return (
-    <Container as="main" className="py-16 lg:py-20">
+    <Container as="main" className="py-8 sm:py-12 lg:py-16">
       <JsonLd data={personJsonLd} />
-      <div className="mb-7">
+      <div className="mb-5 sm:mb-7">
         <Breadcrumb
           items={[
             { label: 'Beranda', href: '/' },
@@ -88,7 +88,7 @@ export default async function AuthorPage({
           ]}
         />
       </div>
-      <header className="border-line mb-11 flex items-start gap-5 border-b pb-9">
+      <header className="border-line mb-11 flex flex-col items-start gap-4 border-b pb-9 sm:flex-row sm:gap-5">
         <FixedImage
           media={author.avatar}
           size={96}

@@ -79,20 +79,21 @@ export default async function VideoDetailPage(
   };
 
   return (
-    <Container className="py-14">
+    <Container className="py-8 sm:py-12 lg:py-16">
       <JsonLd data={jsonLd} />
-      <Breadcrumb
-        items={[
-          { label: 'Beranda', href: '/' },
-          { label: 'Video', href: '/video' },
-          { label: video.title },
-        ]}
-      />
-      <div className="mx-auto mt-6 max-w-[840px]">
+      <div className="mx-auto max-w-[840px]">
+        <Breadcrumb
+          items={[
+            { label: 'Beranda', href: '/' },
+            { label: 'Video', href: '/video' },
+            { label: video.title },
+          ]}
+        />
+        <div className="mt-5 sm:mt-6" />
         <Eyebrow size="md" className="mb-3">
           Video
         </Eyebrow>
-        <h1 className="text-ink font-serif text-[36px] leading-[1.12] font-semibold tracking-[-0.01em] lg:text-[52px]">
+        <h1 className="text-ink font-serif text-[32px] leading-[1.12] font-semibold tracking-[-0.01em] sm:text-[36px] lg:text-[44px] 2xl:text-[52px]">
           {video.title}
         </h1>
         <div className="text-faint mt-4 text-[12.5px] font-medium">

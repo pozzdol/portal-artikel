@@ -78,8 +78,8 @@ export default async function CategoryPage({
   });
 
   return (
-    <Container as="main" className="py-16 lg:py-20">
-      <div className="mb-7">
+    <Container as="main" className="py-8 sm:py-12 lg:py-16">
+      <div className="mb-5 sm:mb-7">
         <Breadcrumb
           items={[
             { label: 'Beranda', href: '/' },

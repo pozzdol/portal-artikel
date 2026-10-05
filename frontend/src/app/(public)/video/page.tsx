@@ -51,15 +51,15 @@ export default async function VideoPage(props: PageProps<'/video'>) {
   const { items, meta } = await listVideos({ page });
 
   return (
-    <Container className="py-14">
+    <Container className="py-8 sm:py-12 lg:py-16">
       <Breadcrumb
         items={[{ label: 'Beranda', href: '/' }, { label: 'Video' }]}
       />
-      <div className="mt-6 mb-12">
+      <div className="mt-5 mb-8 sm:mt-6 sm:mb-12">
         <Eyebrow size="md" className="mb-3">
           Video
         </Eyebrow>
-        <h1 className="text-ink font-serif text-[36px] leading-[1.12] font-semibold tracking-[-0.01em] lg:text-[52px]">
+        <h1 className="text-ink font-serif text-[32px] leading-[1.12] font-semibold tracking-[-0.01em] sm:text-[36px] lg:text-[44px] 2xl:text-[52px]">
           Video
         </h1>
         <p className="text-soft mt-4 max-w-[560px] text-[15px] leading-[1.7]">

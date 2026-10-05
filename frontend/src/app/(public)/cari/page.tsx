@@ -41,19 +41,21 @@ export default async function SearchPage({ searchParams }: PageProps<'/cari'>) {
       listArticles({ page: 1, per_page: EMPTY_STATE_LIMIT }),
     ]);
     return (
-      <Container as="main" className="py-16 lg:py-20">
-        <h1 className="text-ink mb-3.5 font-serif text-[36px] leading-[1.2] font-semibold lg:text-[44px]">
-          Pencarian
-        </h1>
-        <p className="text-soft mb-9 max-w-[640px] text-[15px] leading-[1.7]">
-          Cari artikel kajian, berita, kisah tokoh, dan agenda alumni.
-        </p>
-        <SearchBox />
-        <SearchEmptyState
-          tags={tags}
-          articles={latest.items}
-          noResults={false}
-        />
+      <Container as="main" className="py-8 sm:py-12 lg:py-16">
+        <div className="max-w-[820px]">
+          <h1 className="text-ink mb-3.5 font-serif text-[32px] leading-[1.2] font-semibold sm:text-[36px] lg:text-[44px] 2xl:text-[52px]">
+            Pencarian
+          </h1>
+          <p className="text-soft mb-9 max-w-[640px] text-[15px] leading-[1.7]">
+            Cari artikel kajian, berita, kisah tokoh, dan agenda alumni.
+          </p>
+          <SearchBox />
+          <SearchEmptyState
+            tags={tags}
+            articles={latest.items}
+            noResults={false}
+          />
+        </div>
       </Container>
     );
   }
@@ -73,31 +75,33 @@ export default async function SearchPage({ searchParams }: PageProps<'/cari'>) {
   }
 
   return (
-    <Container as="main" className="py-16 lg:py-20">
-      <h1 className="text-ink mb-3.5 font-serif text-[36px] leading-[1.2] font-semibold lg:text-[44px]">
-        Hasil pencarian: &ldquo;{q}&rdquo;
-      </h1>
-      <p className="text-faint mb-9 text-[14px] font-medium">
-        {result.meta.total} hasil ditemukan
-        {result.fallback && hasHits
-          ? ' — menampilkan hasil serupa untuk ejaan yang mendekati'
-          : ''}
-      </p>
-      <SearchBox defaultValue={q} />
-      {hasHits ? (
-        <>
-          <SearchResults items={result.items} />
-          <div className="mt-14">
-            <Pagination
-              page={result.meta.page}
-              totalPages={result.meta.total_pages}
-              hrefFor={(n) => `/cari?q=${encodeURIComponent(q)}&page=${n}`}
-            />
-          </div>
-        </>
-      ) : (
-        <SearchEmptyState tags={tags} articles={latestArticles} noResults />
-      )}
+    <Container as="main" className="py-8 sm:py-12 lg:py-16">
+      <div className="max-w-[820px]">
+        <h1 className="text-ink mb-3.5 font-serif text-[32px] leading-[1.2] font-semibold sm:text-[36px] lg:text-[44px] 2xl:text-[52px]">
+          Hasil pencarian: &ldquo;{q}&rdquo;
+        </h1>
+        <p className="text-faint mb-9 text-[13px] font-medium">
+          {result.meta.total} hasil ditemukan
+          {result.fallback && hasHits
+            ? ' — menampilkan hasil serupa untuk ejaan yang mendekati'
+            : ''}
+        </p>
+        <SearchBox defaultValue={q} />
+        {hasHits ? (
+          <>
+            <SearchResults items={result.items} />
+            <div className="mt-14">
+              <Pagination
+                page={result.meta.page}
+                totalPages={result.meta.total_pages}
+                hrefFor={(n) => `/cari?q=${encodeURIComponent(q)}&page=${n}`}
+              />
+            </div>
+          </>
+        ) : (
+          <SearchEmptyState tags={tags} articles={latestArticles} noResults />
+        )}
+      </div>
     </Container>
   );
 }

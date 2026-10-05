@@ -127,15 +127,15 @@ export default async function AgendaPage(props: PageProps<'/agenda'>) {
   const calendarDays = buildCalendarDays(calendarList.items, nextEventId);
 
   return (
-    <Container className="py-14">
+    <Container className="py-8 sm:py-12 lg:py-16">
       <Breadcrumb
         items={[{ label: 'Beranda', href: '/' }, { label: 'Agenda' }]}
       />
-      <div className="mt-6 mb-10">
+      <div className="mt-5 mb-8 sm:mt-6 sm:mb-12">
         <Eyebrow size="md" className="mb-3">
           Agenda
         </Eyebrow>
-        <h1 className="text-ink font-serif text-[36px] leading-[1.12] font-semibold tracking-[-0.01em] lg:text-[52px]">
+        <h1 className="text-ink font-serif text-[32px] leading-[1.12] font-semibold tracking-[-0.01em] sm:text-[36px] lg:text-[44px] 2xl:text-[52px]">
           Agenda
         </h1>
         <p className="text-soft mt-4 max-w-[560px] text-[15px] leading-[1.7]">
@@ -143,7 +143,7 @@ export default async function AgendaPage(props: PageProps<'/agenda'>) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-14 lg:grid-cols-[1fr_340px]">
+      <div className="grid grid-cols-1 gap-10 md:grid-cols-[1fr_320px] lg:grid-cols-[1fr_340px] lg:gap-14">
         <div>
           <AgendaTabs
             active={tab}
@@ -166,7 +166,7 @@ export default async function AgendaPage(props: PageProps<'/agenda'>) {
             />
           </div>
         </div>
-        <div>
+        <div className="order-first self-start md:sticky md:top-28 md:order-none">
           <MonthCalendar
             month={month}
             days={calendarDays}

@@ -51,15 +51,15 @@ export default async function TokohPage(props: PageProps<'/tokoh'>) {
   const { items, meta } = await listAlumni({ page });
 
   return (
-    <Container className="py-14">
+    <Container className="py-8 sm:py-12 lg:py-16">
       <Breadcrumb
         items={[{ label: 'Beranda', href: '/' }, { label: 'Tokoh Alumni' }]}
       />
-      <div className="mt-6 mb-12">
+      <div className="mt-5 mb-8 sm:mt-6 sm:mb-12">
         <Eyebrow size="md" className="mb-3">
           Tokoh Alumni
         </Eyebrow>
-        <h1 className="text-ink font-serif text-[36px] leading-[1.12] font-semibold tracking-[-0.01em] lg:text-[52px]">
+        <h1 className="text-ink font-serif text-[32px] leading-[1.12] font-semibold tracking-[-0.01em] sm:text-[36px] lg:text-[44px] 2xl:text-[52px]">
           Tokoh Alumni
         </h1>
         <p className="text-soft mt-4 max-w-[560px] text-[15px] leading-[1.7]">
@@ -72,7 +72,7 @@ export default async function TokohPage(props: PageProps<'/tokoh'>) {
           Belum ada profil tokoh alumni.
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-8 md:grid-cols-3 lg:grid-cols-4 lg:gap-y-14">
           {items.map((person) => (
             <PersonCard key={person.id} person={person} headingLevel="h2" />
           ))}
