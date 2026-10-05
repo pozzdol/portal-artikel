@@ -30,6 +30,12 @@ export type MediaFieldProps = {
   error?: string;
   disabled?: boolean;
   className?: string;
+  /** Keep the label for screen readers only (e.g. when a panel title already names the field). */
+  hideLabel?: boolean;
+  /** Small ~96px square frame for icons such as the favicon. */
+  compact?: boolean;
+  /** How the preview fills its frame; use 'contain' for logos and icons. */
+  fit?: 'cover' | 'contain';
 };
 
 const ASPECT_CLASS: Record<MediaAspect, string> = {
@@ -42,9 +48,9 @@ const ASPECT_CLASS: Record<MediaAspect, string> = {
 // Portrait/square previews would get too tall at full width.
 const WIDTH_CLASS: Record<MediaAspect, string> = {
   '16/9': 'max-w-md',
-  '4/3': 'max-w-sm',
-  '3/4': 'max-w-[13rem]',
-  '1/1': 'max-w-[15rem]',
+  '4/3': 'max-w-[16rem]',
+  '3/4': 'max-w-[11rem]',
+  '1/1': 'max-w-[10rem]',
 };
 
 export function MediaField({
@@ -56,6 +62,9 @@ export function MediaField({
   error,
   disabled,
   className,
+  hideLabel,
+  compact,
+  fit = 'cover',
 }: MediaFieldProps) {
   const id = useId();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -66,12 +75,14 @@ export function MediaField({
   const frame = cn(
     'relative w-full overflow-hidden border',
     ASPECT_CLASS[aspect],
-    WIDTH_CLASS[aspect],
+    compact ? 'max-w-24' : WIDTH_CLASS[aspect],
   );
 
   return (
     <Field data-invalid={!!error || undefined} className={className}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel htmlFor={id} className={cn(hideLabel && 'sr-only')}>
+        {label}
+      </FieldLabel>
 
       {!value ? (
         <button
@@ -88,8 +99,10 @@ export function MediaField({
             'data-invalid:border-destructive disabled:pointer-events-none disabled:opacity-50',
           )}
         >
-          <ImageIcon className="size-6" aria-hidden />
-          <span className="text-sm font-medium">Pilih gambar</span>
+          <ImageIcon className={compact ? 'size-5' : 'size-6'} aria-hidden />
+          <span className={cn('font-medium', compact ? 'text-xs' : 'text-sm')}>
+            Pilih gambar
+          </span>
         </button>
       ) : (
         <div className="flex flex-col gap-2">
@@ -102,11 +115,13 @@ export function MediaField({
                 alt={item.alt_text ?? ''}
                 fill
                 sizes="448px"
-                className="object-cover"
+                className={
+                  fit === 'contain' ? 'object-contain p-2' : 'object-cover'
+                }
                 unoptimized={item.mime_type === 'image/gif'}
               />
             ) : (
-              <div className="text-muted-foreground absolute inset-0 flex flex-col items-center justify-center gap-1.5 p-3 text-center text-xs">
+              <div className="text-muted-foreground absolute inset-0 flex flex-col items-center justify-center gap-1.5 p-2 text-center text-xs">
                 <ImageOffIcon className="size-5" aria-hidden />
                 {missing
                   ? `Media #${value} tidak ditemukan.`
@@ -116,8 +131,8 @@ export function MediaField({
           </div>
           <div
             className={cn(
-              'flex w-full flex-wrap items-center gap-x-2 gap-y-1',
-              WIDTH_CLASS[aspect],
+              'flex w-full flex-wrap items-center gap-2 [&_button]:min-h-10 md:[&_button]:min-h-8',
+              compact ? 'max-w-xs' : WIDTH_CLASS[aspect],
             )}
           >
             <span

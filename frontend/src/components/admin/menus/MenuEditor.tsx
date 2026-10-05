@@ -116,6 +116,7 @@ export function MenuEditor({ menu, maxDepth, onDirtyChange }: MenuEditorProps) {
           action={
             <Button
               size="sm"
+              className="min-h-11 md:min-h-8"
               onClick={() => setDialogState({ mode: 'create-root' })}
             >
               <PlusIcon /> Tambah item
@@ -152,6 +153,7 @@ export function MenuEditor({ menu, maxDepth, onDirtyChange }: MenuEditorProps) {
             <Button
               size="sm"
               variant="outline"
+              className="min-h-11 md:min-h-8"
               onClick={() => setDialogState({ mode: 'create-root' })}
             >
               <PlusIcon /> Tambah item

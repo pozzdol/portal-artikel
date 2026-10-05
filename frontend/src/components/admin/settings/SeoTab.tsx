@@ -5,6 +5,7 @@ import { Controller } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { MediaField } from '@/components/admin/MediaField';
+import { FormActions } from '@/components/admin/FormActions';
 import { Button } from '@/components/ui/shadcn/button';
 import {
   Field,
@@ -137,7 +138,12 @@ export function SeoTab({
             </Field>
           )}
         />
-        <div className="flex justify-end gap-2">
+        <FormActions>
+          {isDirty ? (
+            <p className="text-muted-foreground mr-auto text-sm">
+              Ada perubahan belum disimpan.
+            </p>
+          ) : null}
           <Button
             type="button"
             variant="ghost"
@@ -150,7 +156,7 @@ export function SeoTab({
             {update.isPending ? <Spinner /> : null}
             Simpan SEO
           </Button>
-        </div>
+        </FormActions>
       </FieldGroup>
     </form>
   );

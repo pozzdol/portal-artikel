@@ -76,6 +76,10 @@ function HomepageBuilderInner() {
     () => new Map((typesQ.data ?? []).map((t) => [t.type, t])),
     [typesQ.data],
   );
+  const typeLabels = React.useMemo(
+    () => new Map((typesQ.data ?? []).map((t) => [t.type, t.label])),
+    [typesQ.data],
+  );
   const counts = React.useMemo(() => {
     const m = new Map<string, number>();
     for (const s of sections) m.set(s.type, (m.get(s.type) ?? 0) + 1);
@@ -191,7 +195,7 @@ function HomepageBuilderInner() {
 
   const header = (
     <PageHeader
-      title="Homepage"
+      title="Beranda"
       description="Susun section beranda. Seret untuk mengubah urutan; perubahan langsung tersimpan dan tampil di situs."
       actions={
         <>
@@ -208,7 +212,7 @@ function HomepageBuilderInner() {
             disabled={!typesQ.data}
           >
             <PlusIcon data-icon="inline-start" />
-            Section
+            Tambah section
           </Button>
         </>
       }
@@ -269,6 +273,7 @@ function HomepageBuilderInner() {
             sections={sections}
             publicIds={publicQ.data}
             pendingActive={pendingActive}
+            typeLabels={typeLabels}
             disabled={reorder.isPending}
             onReorder={handleReorder}
             onToggleActive={handleToggle}

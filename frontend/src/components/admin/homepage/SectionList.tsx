@@ -56,6 +56,8 @@ export type SectionListProps = {
   publicIds: Set<number> | undefined;
   /** Optimistic is_active while the toggle request is in flight. */
   pendingActive: Map<number, boolean>;
+  /** Friendly name per section type code (from the section type registry). */
+  typeLabels?: Map<string, string>;
   disabled?: boolean;
   onReorder: (next: HomepageSection[]) => void;
   onToggleActive: (s: HomepageSection, active: boolean) => void;
@@ -69,6 +71,7 @@ export function SectionList({
   sections,
   publicIds,
   pendingActive,
+  typeLabels,
   disabled,
   onReorder,
   onToggleActive,
@@ -89,6 +92,7 @@ export function SectionList({
           return (
             <SectionRow
               section={{ ...s, is_active: active }}
+              typeLabel={typeLabels?.get(s.type) ?? s.type}
               position={sections.indexOf(s) + 1}
               visibility={sectionVisibility(
                 { ...s, is_active: active },
@@ -112,6 +116,7 @@ export function SectionList({
 
 function SectionRow({
   section: s,
+  typeLabel,
   position,
   visibility,
   handleProps,
@@ -124,6 +129,7 @@ function SectionRow({
   onDelete,
 }: {
   section: HomepageSection;
+  typeLabel: string;
   position: number;
   visibility: SectionVisibility;
   handleProps: SortableHandleProps;
@@ -143,7 +149,7 @@ function SectionRow({
     <div
       data-section-id={s.id}
       className={cn(
-        'border-line bg-background grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-2 border-b px-2 py-3 sm:grid-cols-[auto_auto_auto_1fr_auto] sm:px-3',
+        'border-line bg-background grid grid-cols-[auto_1fr_auto] items-center gap-x-2 border-b px-1 py-2.5 sm:grid-cols-[auto_auto_auto_1fr_auto] sm:gap-x-3 sm:px-3 sm:py-3',
         isDragging && 'border-gold relative border shadow-lg',
       )}
     >
@@ -152,7 +158,7 @@ function SectionRow({
         {...dragHandleProps(handleProps)}
         disabled={disabled}
         aria-label={`Pindahkan ${s.label}`}
-        className="text-meta hover:text-foreground focus-visible:ring-gold cursor-grab touch-none self-stretch px-1 outline-none focus-visible:ring-2 active:cursor-grabbing disabled:cursor-default"
+        className="text-meta hover:text-foreground focus-visible:ring-gold flex min-w-11 cursor-grab touch-none items-center justify-center self-stretch outline-none focus-visible:ring-2 active:cursor-grabbing disabled:cursor-default sm:min-w-8"
       >
         <GripVerticalIcon className="size-4" />
       </button>
@@ -172,13 +178,13 @@ function SectionRow({
         className={cn('hidden w-16 sm:block', dim && 'opacity-40')}
       />
 
-      <div className="flex min-w-0 flex-col gap-1">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+      <div className="flex min-w-0 flex-col gap-0.5 sm:gap-1">
+        <div className="flex min-w-0 items-center gap-x-2">
           <button
             type="button"
             onClick={onEdit}
             className={cn(
-              'hover:text-gold-strong truncate text-left font-medium',
+              'hover:text-gold-strong min-h-11 min-w-0 flex-1 truncate text-left font-medium sm:min-h-0 sm:flex-none',
               dim && 'text-meta',
             )}
           >
@@ -186,13 +192,20 @@ function SectionRow({
           </button>
           <Badge
             variant="outline"
-            className="text-meta font-mono text-[11px] font-normal"
+            title={s.type}
+            className="text-meta hidden text-xs font-normal sm:inline-flex"
           >
-            {s.type}
+            {typeLabel}
           </Badge>
         </div>
+        <p
+          className="text-meta -mt-2 truncate text-xs sm:hidden"
+          title={s.type}
+        >
+          {typeLabel}
+        </p>
         {summary.length ? (
-          <ul className="text-meta flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
+          <ul className="text-meta hidden flex-wrap gap-x-3 gap-y-0.5 text-xs sm:flex">
             {summary.map((t) => (
               <li key={t}>{t}</li>
             ))}
@@ -201,11 +214,11 @@ function SectionRow({
         <VisibilityNote visibility={visibility} />
       </div>
 
-      <div className="col-span-3 flex items-center justify-end gap-1 sm:col-span-1 sm:gap-2">
+      <div className="flex items-center justify-end gap-0 sm:gap-2">
         <label
           htmlFor={switchId}
           className={cn(
-            'flex cursor-pointer items-center gap-2 pr-1 text-xs',
+            'flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2 text-xs sm:min-h-0 sm:min-w-0 sm:justify-start sm:pr-1',
             s.is_active ? 'text-foreground' : 'text-meta',
           )}
         >
@@ -216,9 +229,17 @@ function SectionRow({
             onCheckedChange={onToggleActive}
             aria-label={`${s.is_active ? 'Nonaktifkan' : 'Aktifkan'} ${s.label}`}
           />
-          <span className="w-14">{s.is_active ? 'Aktif' : 'Nonaktif'}</span>
+          <span className="sr-only sm:not-sr-only sm:w-14" aria-hidden="true">
+            {s.is_active ? 'Aktif' : 'Nonaktif'}
+          </span>
         </label>
-        <Button type="button" variant="outline" size="sm" onClick={onEdit}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onEdit}
+          className="hidden sm:inline-flex"
+        >
           <PencilIcon data-icon="inline-start" />
           Edit
         </Button>
@@ -228,12 +249,17 @@ function SectionRow({
               type="button"
               variant="ghost"
               size="icon-sm"
+              className="size-11 sm:size-8"
               aria-label={`Aksi lain untuk ${s.label}`}
             >
               <EllipsisIcon />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={onEdit} className="sm:hidden">
+              <PencilIcon />
+              Edit
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={onDuplicate}>
               <CopyIcon />
               Duplikat

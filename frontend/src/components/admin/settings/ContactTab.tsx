@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Controller } from 'react-hook-form';
 import { toast } from 'sonner';
 
+import { FormActions } from '@/components/admin/FormActions';
 import { Button } from '@/components/ui/shadcn/button';
 import {
   Field,
@@ -102,7 +103,12 @@ export function ContactTab({
             )}
           />
         </div>
-        <div className="flex justify-end gap-2">
+        <FormActions>
+          {isDirty ? (
+            <p className="text-muted-foreground mr-auto text-sm">
+              Ada perubahan belum disimpan.
+            </p>
+          ) : null}
           <Button
             type="button"
             variant="ghost"
@@ -115,7 +121,7 @@ export function ContactTab({
             {update.isPending ? <Spinner /> : null}
             Simpan kontak
           </Button>
-        </div>
+        </FormActions>
       </FieldGroup>
     </form>
   );

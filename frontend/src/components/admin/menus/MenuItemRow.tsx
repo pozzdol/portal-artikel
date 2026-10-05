@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import {
+  EllipsisIcon,
   ExternalLinkIcon,
   GripVerticalIcon,
   PencilIcon,
@@ -13,6 +14,13 @@ import type { SortableTreeHandleProps } from '@/components/admin/SortableTree';
 import { dragHandleProps } from '@/components/admin/homepage/drag-handle';
 import { Badge } from '@/components/ui/shadcn/badge';
 import { Button } from '@/components/ui/shadcn/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/shadcn/dropdown-menu';
 import { Switch } from '@/components/ui/shadcn/switch';
 import { usePages } from '@/lib/api/admin/pages';
 import { usePublicCategoryTree } from '@/lib/api/admin/taxonomy';
@@ -60,7 +68,7 @@ export function MenuItemRow({
   return (
     <div
       className={cn(
-        'border-line bg-card flex items-start gap-2 border p-2.5',
+        'border-line bg-card flex items-center gap-2 border p-2.5',
         isDragging && 'ring-gold ring-1',
         isOver && 'border-gold',
         !node.is_active && 'opacity-60',
@@ -69,7 +77,7 @@ export function MenuItemRow({
       <button
         type="button"
         {...dragHandleProps(handleProps)}
-        className="text-muted-foreground hover:text-foreground mt-1 shrink-0 cursor-grab touch-none active:cursor-grabbing"
+        className="text-muted-foreground hover:text-foreground -my-1 flex size-11 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing md:my-0 md:size-8"
         aria-label="Urutkan"
       >
         <GripVerticalIcon className="size-4" />
@@ -90,38 +98,74 @@ export function MenuItemRow({
           {href ?? 'Tautan tidak dapat diselesaikan'}
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-1">
-        <Switch
-          checked={node.is_active}
-          onCheckedChange={onToggleActive}
-          aria-label="Aktif"
-        />
-        {canAddChild ? (
+      <div className="flex shrink-0 items-center gap-1 md:gap-1.5">
+        <label className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center md:min-h-0 md:min-w-0">
+          <Switch
+            checked={node.is_active}
+            onCheckedChange={onToggleActive}
+            aria-label="Aktif"
+          />
+        </label>
+        <div className="hidden items-center gap-1.5 md:flex">
+          {canAddChild ? (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="size-9"
+              onClick={onAddChild}
+              aria-label="Tambah sub-item"
+            >
+              <PlusIcon className="size-4" />
+            </Button>
+          ) : null}
           <Button
-            size="icon-sm"
+            size="icon"
             variant="ghost"
-            onClick={onAddChild}
-            aria-label="Tambah sub-item"
+            className="size-9"
+            onClick={onEdit}
+            aria-label="Sunting"
           >
-            <PlusIcon className="size-4" />
+            <PencilIcon className="size-4" />
           </Button>
-        ) : null}
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          onClick={onEdit}
-          aria-label="Sunting"
-        >
-          <PencilIcon className="size-4" />
-        </Button>
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          onClick={onDelete}
-          aria-label="Hapus"
-        >
-          <Trash2Icon className="size-4" />
-        </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="hover:text-destructive size-9"
+            onClick={onDelete}
+            aria-label="Hapus"
+          >
+            <Trash2Icon className="size-4" />
+          </Button>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="size-11 md:hidden"
+              aria-label="Aksi item menu"
+            >
+              <EllipsisIcon className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={onEdit}>
+              <PencilIcon />
+              Sunting
+            </DropdownMenuItem>
+            {canAddChild ? (
+              <DropdownMenuItem onSelect={onAddChild}>
+                <PlusIcon />
+                Tambah sub-item
+              </DropdownMenuItem>
+            ) : null}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+              <Trash2Icon />
+              Hapus
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

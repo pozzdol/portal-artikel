@@ -54,8 +54,13 @@ export function CategorySelect({
 
   return (
     <Select
-      value={value === null ? NONE : String(value)}
-      onValueChange={(v) => onChange(v === NONE ? null : Number(v))}
+      // '' (not the NONE sentinel) makes Radix show the placeholder when
+      // "no category" is not a selectable option.
+      value={value === null ? (allowNone ? NONE : '') : String(value)}
+      onValueChange={(v) => {
+        if (v === '') return;
+        onChange(v === NONE ? null : Number(v));
+      }}
       disabled={disabled}
     >
       <SelectTrigger id={id} className="w-full">

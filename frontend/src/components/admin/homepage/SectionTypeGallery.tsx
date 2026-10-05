@@ -65,7 +65,7 @@ export function SectionTypeGallery({
                           {t.description}
                         </span>
                         {n > 0 ? (
-                          <span className="text-meta pt-1 text-[11px]">
+                          <span className="text-meta pt-1 text-xs">
                             Sudah dipakai {n}×
                           </span>
                         ) : null}

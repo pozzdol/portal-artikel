@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -37,6 +37,21 @@ const schema = z.object({
 
 const INVALID_CREDENTIALS = 'Email atau kata sandi salah.';
 
+const noopSubscribe = () => () => {};
+
+/**
+ * False in the server HTML and until React hydrates. Until then the submit
+ * button stays disabled, so an early click can never fall back to a native
+ * form POST that sends the credentials to the page itself.
+ */
+function useHydrated(): boolean {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
+}
+
 /** Epoch ms `seconds` from now (at least 1s). */
 function deadlineIn(seconds: number | undefined): number {
   return Date.now() + Math.max(1, seconds ?? 60) * 1000;
@@ -61,6 +76,7 @@ export function LoginForm({ next, tryRefresh = false }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const refreshTried = useRef(false);
+  const hydrated = useHydrated();
 
   const form = useZodForm(schema, {
     defaultValues: { email: '', password: '', remember: false },
@@ -181,6 +197,7 @@ export function LoginForm({ next, tryRefresh = false }: LoginFormProps) {
                 <InputGroupAddon align="inline-end">
                   <InputGroupButton
                     size="icon-xs"
+                    className="size-9 md:size-7"
                     aria-label={
                       showPassword
                         ? 'Sembunyikan kata sandi'
@@ -202,26 +219,39 @@ export function LoginForm({ next, tryRefresh = false }: LoginFormProps) {
           control={form.control}
           name="remember"
           render={({ field }) => (
-            <Field orientation="horizontal" className="items-center gap-2.5">
+            <Field
+              orientation="horizontal"
+              className="min-h-11 items-center gap-3"
+            >
               <Checkbox
                 id="login-remember"
+                className="size-5"
                 checked={field.value}
                 onCheckedChange={(v) => field.onChange(v === true)}
                 onBlur={field.onBlur}
                 disabled={busy}
               />
-              <FieldLabel htmlFor="login-remember" className="font-normal">
+              <FieldLabel
+                htmlFor="login-remember"
+                className="min-h-11 flex-1 items-center font-normal"
+              >
                 Ingat saya selama 30 hari
               </FieldLabel>
             </Field>
           )}
         />
 
+        <noscript>
+          <p className="text-destructive text-sm">
+            Aktifkan JavaScript di peramban untuk masuk.
+          </p>
+        </noscript>
+
         <Button
           type="submit"
           size="lg"
           className="h-11 w-full text-[15px]"
-          disabled={busy || locked}
+          disabled={!hydrated || busy || locked}
         >
           {busy ? <Spinner /> : null}
           {redirecting ? 'Membuka dasbor…' : 'Masuk'}

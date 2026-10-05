@@ -133,7 +133,7 @@ export function DatePicker({
       <PopoverAnchor asChild>
         <InputGroup
           data-disabled={disabled ? 'true' : undefined}
-          className={cn('bg-background w-full sm:w-44', className)}
+          className={cn('bg-background h-11 w-full sm:w-44 md:h-9', className)}
         >
           <InputGroupInput
             ref={ref}
@@ -170,6 +170,7 @@ export function DatePicker({
             {clearable && current && !disabled ? (
               <InputGroupButton
                 size="icon-xs"
+                className="size-9 md:size-6"
                 aria-label="Kosongkan tanggal"
                 title="Kosongkan"
                 onClick={() => pick(null)}
@@ -188,7 +189,7 @@ export function DatePicker({
               aria-haspopup="dialog"
               aria-expanded={open}
               onClick={() => setOpen((o) => !o)}
-              className="text-foreground/70 hover:text-foreground"
+              className="text-foreground/70 hover:text-foreground size-9 md:size-6"
             >
               <CalendarDaysIcon />
             </InputGroupButton>

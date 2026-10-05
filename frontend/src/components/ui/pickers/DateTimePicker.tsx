@@ -123,16 +123,12 @@ export function DateTimePicker({
           step={step}
           disabled={disabled}
           aria-label="Jam (WIB)"
+          suffix="WIB"
           aria-invalid={ariaInvalid}
           aria-describedby={ariaDescribedBy}
           onBlur={onBlur}
           onChange={(time) => update({ date: parts.date, time })}
         />
-      )}
-      {allDay ? null : (
-        <span className="text-muted-foreground text-xs" aria-hidden="true">
-          WIB
-        </span>
       )}
     </div>
   );

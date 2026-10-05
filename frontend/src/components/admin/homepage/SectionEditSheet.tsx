@@ -218,14 +218,11 @@ function SheetBody({
             <SheetDescription>
               {typeInfo.label}. {typeInfo.description}
             </SheetDescription>
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              <Badge variant="outline" className="font-mono text-[11px]">
-                {typeInfo.type}
-              </Badge>
-              {section && !section.is_active ? (
+            {section && !section.is_active ? (
+              <div className="flex flex-wrap gap-1.5 pt-1">
                 <Badge variant="secondary">Nonaktif</Badge>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </SheetHeader>

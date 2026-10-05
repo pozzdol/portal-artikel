@@ -119,11 +119,11 @@ Satu halaman dengan 4 tab:
 
 Semua tab mendukung urutan drag & drop.
 
-### 3.9 Section builder (Homepage)
+### 3.9 Section builder (Beranda)
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
-│ Homepage                                         [Lihat Beranda ↗] [+ Section] │
+│ Beranda                                  [Lihat Beranda ↗] [+ Tambah section] │
 ├────────────────────────────────────────────────────────────────────────────┤
 │ ≡  Hero + Trending Hari Ini      hero_trending        ● Aktif   [Edit] [⋯]   │
 │ ≡  Breaking News                 breaking_ticker      ● Aktif   [Edit] [⋯]   │
@@ -139,12 +139,15 @@ Semua tab mendukung urutan drag & drop.
 │ ≡  Pertanyaan Umum               faq                  ● Aktif   [Edit] [⋯]   │
 │ ≡  Newsletter                    newsletter           ○ Nonaktif [Edit] [⋯]  │
 └────────────────────────────────────────────────────────────────────────────┘
- [⋯] = Duplikat · Hapus
+ [⋯] = Duplikat · Hapus  (di layar ponsel juga Edit)
 ```
+
+Kolom tengah menampilkan nama tipe yang ramah (mis. "Hero + Trending"); kode tipe
+(`hero_trending`, …) hanya muncul sebagai tooltip.
 
 - **Drag handle (≡)** untuk mengubah urutan. Urutan disimpan otomatis (`PUT /reorder`), dengan tombol Urungkan di toast.
 - **Toggle aktif** langsung tersimpan.
-- **[+ Section]** membuka galeri tipe section. Setiap tipe punya ikon, deskripsi, dan gambar mini tata letak. Setelah dipilih, form config terbuka dengan nilai default.
+- **[+ Tambah section]** membuka galeri tipe section. Setiap tipe punya ikon, deskripsi, dan gambar mini tata letak. Setelah dipilih, form config terbuka dengan nilai default.
 - **Form Edit** dibangkitkan dari skema tipe (JSON Schema dari `GET /homepage/section-types`):
   - `string` → input, `boolean` → switch, `enum` → select/segmented, `integer` → number (min/max),
   - `category_slug` → pemilih kategori, `tag_slug` → pemilih tag, `article_id` → pencari artikel,

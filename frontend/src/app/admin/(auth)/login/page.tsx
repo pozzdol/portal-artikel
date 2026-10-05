@@ -64,7 +64,7 @@ export default async function AdminLoginPage({
           <Button
             asChild
             variant="link"
-            className="text-meta hover:text-ink h-auto px-0"
+            className="text-meta hover:text-ink inline-flex h-auto min-h-11 items-center px-0 py-2"
           >
             <Link href="/">
               <ArrowLeftIcon />

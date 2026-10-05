@@ -35,6 +35,8 @@ export interface TimePickerProps {
   'aria-invalid'?: boolean | 'true' | 'false';
   'aria-describedby'?: string;
   'aria-label'?: string;
+  /** Short unit text shown inside the field after the value (e.g. "WIB"). */
+  suffix?: string;
 }
 
 export function TimePicker({
@@ -51,6 +53,7 @@ export function TimePicker({
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedBy,
   'aria-label': ariaLabel,
+  suffix,
 }: TimePickerProps) {
   const current = value ? normalizeTimeText(value) : null;
   const [text, setText] = React.useState(current ?? '');
@@ -89,7 +92,11 @@ export function TimePicker({
   return (
     <InputGroup
       data-disabled={disabled ? 'true' : undefined}
-      className={cn('bg-background w-full sm:w-32', className)}
+      className={cn(
+        'bg-background h-11 w-full md:h-9',
+        suffix ? 'sm:w-36' : 'sm:w-32',
+        className,
+      )}
     >
       <InputGroupInput
         ref={ref}
@@ -121,6 +128,11 @@ export function TimePicker({
         }}
       />
       <InputGroupAddon align="inline-end">
+        {suffix ? (
+          <span className="text-muted-foreground text-xs font-normal">
+            {suffix}
+          </span>
+        ) : null}
         <Select
           value={selectValue}
           disabled={disabled}
@@ -135,7 +147,7 @@ export function TimePicker({
             aria-label={
               current ? `Pilih jam, terpilih ${current}` : 'Pilih jam'
             }
-            className="text-foreground/70 hover:bg-muted hover:text-foreground data-[state=open]:bg-muted data-[state=open]:text-foreground size-6 justify-center border-0 bg-transparent p-0 shadow-none data-[size=sm]:h-6 dark:bg-transparent [&>svg:last-child]:hidden"
+            className="text-foreground/70 hover:bg-muted hover:text-foreground data-[state=open]:bg-muted data-[state=open]:text-foreground size-9 justify-center border-0 bg-transparent p-0 shadow-none data-[size=sm]:h-9 md:size-6 md:data-[size=sm]:h-6 dark:bg-transparent [&>svg:last-child]:hidden"
           >
             <Clock3Icon />
           </SelectTrigger>

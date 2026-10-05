@@ -6,6 +6,7 @@ import { GripVerticalIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { SortableList } from '@/components/admin/SortableList';
+import { FormActions } from '@/components/admin/FormActions';
 import { Button } from '@/components/ui/shadcn/button';
 import { Field, FieldError, FieldGroup } from '@/components/ui/shadcn/field';
 import { Input } from '@/components/ui/shadcn/input';
@@ -187,7 +188,12 @@ export function SocialTab({
             );
           }}
         />
-        <div className="flex justify-end gap-2">
+        <FormActions>
+          {isDirty ? (
+            <p className="text-muted-foreground mr-auto text-sm">
+              Ada perubahan belum disimpan.
+            </p>
+          ) : null}
           <Button
             type="button"
             variant="ghost"
@@ -202,7 +208,7 @@ export function SocialTab({
             {update.isPending ? <Spinner /> : null}
             Simpan sosial media
           </Button>
-        </div>
+        </FormActions>
       </FieldGroup>
     </form>
   );

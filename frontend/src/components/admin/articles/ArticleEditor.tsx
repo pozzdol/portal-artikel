@@ -499,7 +499,7 @@ function ArticleEditorForm({
           e.preventDefault();
           void onAction({ kind: 'save', label: 'Simpan' });
         }}
-        className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]"
+        className="grid items-start gap-8 pb-24 lg:grid-cols-[minmax(0,1fr)_20rem] lg:pb-0 xl:grid-cols-[minmax(0,1fr)_22rem]"
       >
         <fieldset disabled={readOnly} className="flex min-w-0 flex-col gap-6">
           <legend className="sr-only">Isi artikel</legend>
@@ -611,7 +611,7 @@ function ArticleEditorForm({
         </fieldset>
 
         <aside
-          className="flex min-w-0 flex-col gap-4"
+          className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto lg:pr-1"
           aria-label="Pengaturan artikel"
         >
           <PublishPanel
@@ -625,6 +625,7 @@ function ArticleEditorForm({
             canPublish={perms.publish}
             readOnly={readOnly}
             dirty={dirty}
+            hideActionsOnMobile
             onTrash={
               article && !trashed && perms.remove
                 ? () => setConfirm('trash')

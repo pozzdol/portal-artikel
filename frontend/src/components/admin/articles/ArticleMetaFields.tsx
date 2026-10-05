@@ -94,7 +94,12 @@ export function ArticleMetaFields({
           name="category_id"
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="article-category">Kategori</FieldLabel>
+              <FieldLabel htmlFor="article-category">
+                Kategori
+                <span className="text-destructive" aria-hidden="true">
+                  *
+                </span>
+              </FieldLabel>
               <CategorySelect
                 id="article-category"
                 tree={tree}
@@ -160,6 +165,7 @@ export function ArticleMetaFields({
           render={({ field, fieldState }) => (
             <MediaField
               label="Gambar sampul"
+              hideLabel
               value={field.value ?? null}
               onChange={(id) => field.onChange(id)}
               aspect="16/9"

@@ -105,13 +105,18 @@ export function TagInput({
       {label ? <FieldLabel htmlFor={id}>{label}</FieldLabel> : null}
       <div className="border-input flex flex-wrap items-center gap-1.5 rounded-md border bg-transparent p-1.5">
         {value.ids.map((tagId) => (
-          <Badge key={`id-${tagId}`} variant="secondary" className="gap-1">
+          <Badge
+            key={`id-${tagId}`}
+            variant="secondary"
+            className="h-8 gap-1 pr-0 md:h-5 md:pr-0.5"
+          >
             {labelFor(tagId)}
             <button
               type="button"
               onClick={() => removeExisting(tagId)}
               aria-label={`Hapus tag ${labelFor(tagId)}`}
               disabled={disabled}
+              className="hover:bg-foreground/10 inline-flex size-8 items-center justify-center rounded-full md:size-5"
             >
               <XIcon className="size-3" />
             </button>
@@ -121,15 +126,18 @@ export function TagInput({
           <Badge
             key={`new-${name}`}
             variant="outline"
-            className="gap-1 border-dashed"
+            className="h-8 gap-1 border-dashed pr-0 md:h-5 md:pr-0.5"
           >
             {name}
-            <span className="text-muted-foreground text-[10px]">(baru)</span>
+            <span className="text-muted-foreground text-xs font-normal">
+              (baru)
+            </span>
             <button
               type="button"
               onClick={() => removeNew(name)}
               aria-label={`Hapus tag ${name}`}
               disabled={disabled}
+              className="hover:bg-foreground/10 inline-flex size-8 items-center justify-center rounded-full md:size-5"
             >
               <XIcon className="size-3" />
             </button>

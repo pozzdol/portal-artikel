@@ -5,6 +5,7 @@ import { Controller } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { MediaField } from '@/components/admin/MediaField';
+import { FormActions } from '@/components/admin/FormActions';
 import { Button } from '@/components/ui/shadcn/button';
 import {
   Field,
@@ -99,6 +100,7 @@ export function IdentityTab({
               <MediaField
                 label="Logo"
                 aspect="4/3"
+                fit="contain"
                 value={field.value}
                 onChange={(v) => field.onChange(v)}
                 error={fieldState.error?.message}
@@ -113,6 +115,8 @@ export function IdentityTab({
               <MediaField
                 label="Favicon"
                 aspect="1/1"
+                compact
+                fit="contain"
                 value={field.value}
                 onChange={(v) => field.onChange(v)}
                 error={fieldState.error?.message}
@@ -121,7 +125,12 @@ export function IdentityTab({
             )}
           />
         </div>
-        <div className="flex justify-end gap-2">
+        <FormActions>
+          {isDirty ? (
+            <p className="text-muted-foreground mr-auto text-sm">
+              Ada perubahan belum disimpan.
+            </p>
+          ) : null}
           <Button
             type="button"
             variant="ghost"
@@ -134,7 +143,7 @@ export function IdentityTab({
             {update.isPending ? <Spinner /> : null}
             Simpan identitas
           </Button>
-        </div>
+        </FormActions>
       </FieldGroup>
     </form>
   );

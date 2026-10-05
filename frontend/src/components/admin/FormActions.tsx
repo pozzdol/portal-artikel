@@ -17,7 +17,8 @@ export function FormActions({
   return (
     <div
       className={cn(
-        'border-line bg-background/95 supports-[backdrop-filter]:bg-background/80 flex flex-wrap items-center justify-end gap-2 border-t px-1 py-4 backdrop-blur',
+        'border-line bg-background flex flex-wrap items-center justify-end gap-2 border-t px-1 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] [&_button]:min-h-11 lg:[&_button]:min-h-9',
+        sticky && 'shadow-[0_-8px_24px_-16px_rgb(0_0_0/0.25)]',
         sticky && 'sticky bottom-0 z-10',
         className,
       )}

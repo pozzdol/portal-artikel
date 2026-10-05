@@ -4,6 +4,7 @@ import * as React from 'react';
 import { CalendarClockIcon, Trash2Icon } from 'lucide-react';
 
 import { StatusBadge } from '@/components/admin/StatusBadge';
+import { Badge } from '@/components/ui/shadcn/badge';
 import { DateTimePicker } from '@/components/ui/pickers';
 import { Button } from '@/components/ui/shadcn/button';
 import { Spinner } from '@/components/ui/shadcn/spinner';
@@ -92,7 +93,7 @@ function statusLine(
   status: ArticleStatus | null,
   publishedAt: string | null,
 ): string {
-  if (!status) return 'Belum disimpan.';
+  if (!status) return 'Belum tersimpan di server.';
   if (status === 'published' && publishedAt)
     return `Terbit ${formatWib(publishedAt, WIB_LONG)}.`;
   if (status === 'scheduled' && publishedAt)
@@ -114,6 +115,11 @@ export type PublishPanelProps = {
   /** Shown as a quiet link at the bottom (soft delete). */
   onTrash?: () => void;
   dirty: boolean;
+  /**
+   * Hide the primary/secondary buttons below `lg` because the editor renders
+   * them in a sticky mobile action bar instead (unpublish stays in the card).
+   */
+  hideActionsOnMobile?: boolean;
 };
 
 export function ActionButton({
@@ -158,7 +164,9 @@ export function PublishPanel({
   readOnly,
   onTrash,
   dirty,
+  hideActionsOnMobile,
 }: PublishPanelProps) {
+  const mainCls = cn('w-full', hideActionsOnMobile && 'hidden lg:inline-flex');
   const future = isFuture(publishAt);
   const pickerId = React.useId();
 
@@ -166,7 +174,11 @@ export function PublishPanel({
     <section className="border-line flex flex-col gap-4 border p-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-foreground text-sm font-semibold">Publikasi</h2>
-        {status ? <StatusBadge status={status} /> : null}
+        {status ? (
+          <StatusBadge status={status} />
+        ) : (
+          <Badge variant="outline">Draf baru</Badge>
+        )}
       </div>
       <p className="text-muted-foreground text-sm leading-relaxed">
         {statusLine(status, savedPublishedAt)}
@@ -217,7 +229,7 @@ export function PublishPanel({
               variant="default"
               busy={busy}
               onAction={onAction}
-              className="w-full"
+              className={mainCls}
             />
           ) : null}
           {buttons.secondary ? (
@@ -226,7 +238,7 @@ export function PublishPanel({
               variant="outline"
               busy={busy}
               onAction={onAction}
-              className="w-full"
+              className={mainCls}
             />
           ) : null}
           {buttons.unpublish ? (
