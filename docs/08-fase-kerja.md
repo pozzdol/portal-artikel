@@ -437,7 +437,6 @@ Dijalankan manual bersama pemilik proyek (dan sebagian diotomasi dengan Playwrig
 | Rendah | Denylist access token per sesi (sid in-process map) |
 | Rendah | Logo versi gelap di pengaturan |
 | Rendah | Filter "mendatang/selesai" agenda di admin backend |
-| Rendah | Token warna faint/ghost untuk kontras AA |
 | Rendah | Komentar pembaca (dengan moderasi) |
 | Rendah | Bookmark / akun pembaca |
 | Rendah | Kontainerisasi (Docker) & CI/CD |

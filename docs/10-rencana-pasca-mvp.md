@@ -241,7 +241,7 @@ Butir berikut **bukan pekerjaan kode** dan tidak bisa dikerjakan agen. Semuanya 
 
 ### 3.G Desain, aksesibilitas & UX
 
-#### UX-1 · Kontras token `faint`/`ghost` — **P2 · S**
+#### UX-1 · Kontras token `faint`/`ghost` — **P2 · S** · Selesai (UX pass 2026-10)
 - **Sekarang:** `#888888`/`#999999` di teks kecil ±3,5:1 (di bawah AA 4,5:1); skor A11y tetap 96 (catatan Fase 6).
 - **Rencana:** gelapkan ke ±`#737373`/`#6f6f6f` (light) dan sesuaikan dark; verifikasi pixel-diff & persetujuan desainer.
 

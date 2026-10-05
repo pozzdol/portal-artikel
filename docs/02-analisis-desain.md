@@ -38,8 +38,9 @@
 | `text-body` | `#3A3A3A` | Paragraf hero |
 | `text-soft` | `#555555` | Excerpt, link footer |
 | `text-meta` | `#666666` | Meta (tanggal/penulis), subtitle logo |
-| `text-faint` | `#888888` | Meta kecil, breadcrumb |
-| `text-ghost` | `#999999` | Placeholder, angka kategori, copyright |
+| `text-faint` | light `#6A6A6A` (5,41:1 di paper, 4,96:1 di muted) · dark `#9C9C9C` (7,03:1 / 6,47:1) | Meta kecil, breadcrumb (AA, UX pass 2026-10) |
+| `text-ghost` | light `#707070` (4,95:1 di paper, 4,54:1 di muted) · dark `#8A8A8A` (5,59:1 / 5,14:1) | Placeholder, angka kategori, copyright (AA) |
+| Teks minimum | 12 px; target sentuh ≥ 44 px di < 1024 px | Berlaku untuk semua elemen interaktif dan teks |
 | `dark-input-bg` | `#1A1A1A` | Input newsletter di latar gelap |
 | `dark-input-line` | `#333333` | Border input di latar gelap |
 | `on-dark-muted` | `#B8B8B8` | Paragraf di section gelap |
@@ -64,7 +65,8 @@ sehingga mode gelap cukup mengganti nilai variabel di `.dark`.
 
 | Peran | Font | Ukuran / line-height / weight |
 |---|---|---|
-| H1 hero | Cormorant Garamond | 52px / 1.12 / 600, letter-spacing −0.01em |
+| H1 hero / artikel | Cormorant Garamond | 30–32px (< 640) · 36px (640–1023) · 44px (1024–1535) · 52px (≥ 1536) / 1.12 / 600, letter-spacing −0.01em |
+| Lebar baca artikel | — | `--container-prose` 40rem (640 px), dipakai `max-w-prose` dan `.prose-almaidah` |
 | H2 section | Cormorant Garamond | 34px / 600 (varian 28–30px) |
 | H3 kartu besar | Cormorant Garamond | 22px / 1.3 / 600 |
 | H3 kartu kecil | Cormorant Garamond | 18–20px / 1.35 / 600 |
@@ -85,9 +87,9 @@ Cormorant Garamond (500, 600, 700, italic 500) dan Inter (400, 500, 600, 700).
 | Token | Nilai |
 |---|---|
 | Container | `max-width: 1320px`, padding-x 40px (mobile: 16–20px) |
-| Jarak vertikal section | 88px (quote 110px, newsletter 96px) |
+| Jarak vertikal section | 56px (< 640) · 72px (640–1023) · 88px (≥ 1024); quote 110px, newsletter 96px di desktop |
 | Gap grid | 32–40px (kartu), 56px (kolom utama vs sidebar) |
-| Lebar sidebar | 380px (hero trending), 340px (latest & agenda) |
+| Lebar sidebar | hero trending 300px (md) · 340px (lg) · 380px (xl); latest & agenda 340px |
 | Rasio gambar | 16:9 (hero, opini utama, video), 4:3 (kartu, timeline), 3:4 (tokoh), 1:1 (thumbnail 64/96px) |
 
 ### Responsif
@@ -98,7 +100,7 @@ Desain hanya berupa versi desktop. Aturan responsif yang diusulkan:
 |---|---|
 | `< 640px` | Semua grid menjadi 1 kolom; sidebar turun ke bawah; nav menjadi menu hamburger (drawer); H1 36px; H2 28px |
 | `640–1023px` | Grid 4 menjadi 2 kolom, grid 3 menjadi 2 kolom; sidebar di bawah konten |
-| `≥ 1024px` | Sesuai desain |
+| `≥ 1024px` | Sesuai desain; nav tampil dari 1024 px (overflow → Lainnya), tanggal header tetap ≥ 1536 px |
 
 ---
 

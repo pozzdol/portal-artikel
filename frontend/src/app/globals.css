@@ -15,8 +15,8 @@
   --c-body: #3a3a3a;
   --c-soft: #555555;
   --c-meta: #666666;
-  --c-faint: #888888;
-  --c-ghost: #999999;
+  --c-faint: #6a6a6a;
+  --c-ghost: #707070;
 
   /* Ink surfaces (announcement bar, breaking ticker, quote, newsletter): always
      dark, in both light and dark theme, so never reuse --ink/--paper for these. */
@@ -76,8 +76,8 @@
   --c-body: #d6d6d6;
   --c-soft: #b5b5b5;
   --c-meta: #9a9a9a;
-  --c-faint: #7a7a7a;
-  --c-ghost: #6a6a6a;
+  --c-faint: #9c9c9c;
+  --c-ghost: #8a8a8a;
   --gold: #d4b04a;
   --gold-strong: #e2c25e;
 
@@ -152,6 +152,8 @@
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-heading: var(--font-serif);
   --container-site: 1320px;
+  /* Article reading column: max-w-prose = 640px. */
+  --container-prose: 40rem;
 
   /* Editorial type scale (px sizes, unitless line-heights). */
   --text-display: 52px;
@@ -221,8 +223,9 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--gold);
+    outline: 2px solid currentColor;
     outline-offset: 2px;
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--gold) 45%, transparent);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -252,11 +255,24 @@
   }
 
   .prose-almaidah {
-    max-width: 720px;
+    max-width: var(--container-prose);
     font-family: var(--font-sans);
     font-size: 17px;
     line-height: 1.8;
     color: var(--c-body);
+  }
+
+  .prose-almaidah--compact {
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .prose-almaidah--compact h2 {
+    font-size: 26px;
+  }
+
+  .prose-almaidah--compact h3 {
+    font-size: 20px;
   }
 
   .prose-almaidah h2 {
@@ -373,6 +389,44 @@
     }
   }
 
+  .marquee-fade {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent,
+      #000 24px,
+      #000 calc(100% - 24px),
+      transparent
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent,
+      #000 24px,
+      #000 calc(100% - 24px),
+      transparent
+    );
+  }
+
+  /* Horizontal scroll shadows on shadcn tables (pure CSS, background-attachment trick). */
+  [data-slot='table-container'] {
+    background:
+      linear-gradient(to right, var(--background) 30%, transparent) left
+        center / 24px 100% no-repeat local,
+      linear-gradient(to left, var(--background) 30%, transparent) right
+        center / 24px 100% no-repeat local,
+      linear-gradient(
+          to right,
+          color-mix(in srgb, var(--ink) 10%, transparent),
+          transparent
+        )
+        left center / 12px 100% no-repeat scroll,
+      linear-gradient(
+          to left,
+          color-mix(in srgb, var(--ink) 10%, transparent),
+          transparent
+        )
+        right center / 12px 100% no-repeat scroll;
+  }
+
   @keyframes quote-fade {
     0% {
       opacity: 0;
@@ -450,6 +504,22 @@
     position: static;
     min-height: 37px;
     padding: 2px 4px;
+  }
+
+  @media (max-width: 639px) {
+    .editor-toolbar {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .editor-toolbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .editor-toolbar > * {
+      flex-shrink: 0;
+    }
   }
 
   .editor-toolbar-divider {
