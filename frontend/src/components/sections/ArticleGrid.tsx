@@ -16,9 +16,9 @@ const COLS_CLASS: Record<ArticleGridConfig['columns'], string> = {
 };
 
 const GAP_CLASS: Record<ArticleGridConfig['columns'], string> = {
-  2: 'gap-10',
-  3: 'gap-10',
-  4: 'gap-8',
+  2: 'gap-6 sm:gap-8 lg:gap-10',
+  3: 'gap-6 sm:gap-8 lg:gap-10',
+  4: 'gap-6 sm:gap-8',
 };
 
 /** A titled grid of article cards ("Kajian Terbaru", "Berita Alumni", ...). */

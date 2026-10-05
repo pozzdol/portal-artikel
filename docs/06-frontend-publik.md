@@ -138,7 +138,7 @@ Field umum yang dimiliki **semua** tipe (opsional):
 
 ### Listing kategori / tag / penulis
 - Header: eyebrow "Kategori", H1 nama, deskripsi. Untuk kategori ada pill subkategori.
-- Item pertama tampil besar (hero listing), sisanya grid 3 kolom. Paginasi 12 per halaman.
+- Item pertama tampil besar (hero listing), sisanya grid 3 kolom (≥768 px gambar dan teks hero berdampingan; <640 px kartu grid tampil sebagai baris ringkas). Paginasi 12 per halaman.
 - Halaman ke-2 dan seterusnya: `<link rel="canonical">` menunjuk ke URL halaman itu sendiri (bukan halaman 1), serta judul "… — Halaman 2".
 
 ### Pencarian `/cari`

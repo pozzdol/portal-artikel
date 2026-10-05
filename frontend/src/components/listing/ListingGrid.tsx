@@ -28,12 +28,12 @@ export function ListingGrid({
   return (
     <div>
       {showHeroFirst && hero ? (
-        <div className="border-line mb-16 border-b pb-16">
+        <div className="border-line mb-10 border-b pb-10 sm:mb-14 sm:pb-14">
           <ArticleCard article={hero} variant="listing-hero" preload />
         </div>
       ) : null}
       {gridItems.length > 0 ? (
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3 lg:gap-10">
           {gridItems.map((item) => (
             <ArticleCard
               key={item.id}

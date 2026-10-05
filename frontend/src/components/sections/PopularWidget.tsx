@@ -8,14 +8,19 @@ export function PopularWidget({ items }: { items: ArticleCard[] }) {
   return (
     <div>
       <WidgetHeading>Artikel Populer</WidgetHeading>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         {items.map((article, i) => (
           <Link
             key={article.id}
             href={article.url}
-            className="text-ink text-[14px] leading-[1.4] font-medium hover:underline"
+            className="flex min-h-11 items-start gap-3.5 hover:underline"
           >
-            {i + 1}. {article.title}
+            <span className="text-gold-strong min-w-[26px] font-serif text-[26px] leading-none font-semibold">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <p className="text-ink text-[14px] leading-[1.4] font-medium">
+              {article.title}
+            </p>
           </Link>
         ))}
       </div>

@@ -8,11 +8,11 @@ type SearchResultsProps = {
 /** Search hit list: `ArticleCard variant="search"` with the highlighted title/snippet. */
 export function SearchResults({ items }: SearchResultsProps) {
   return (
-    <ul className="flex flex-col gap-10">
+    <ul className="flex max-w-[820px] flex-col gap-8 sm:gap-10">
       {items.map((item) => (
         <li
           key={item.id}
-          className="border-line border-b pb-10 last:border-b-0"
+          className="border-line border-b pb-8 last:border-b-0 sm:pb-10"
         >
           <ArticleCard
             article={item}

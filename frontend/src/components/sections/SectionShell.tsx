@@ -23,8 +23,8 @@ type SectionShellProps = {
 
 /**
  * Shared homepage section wrapper: anchor id, aria labelling, the
- * paper/muted/ink background split, and the vertical rhythm (88px bottom
- * padding between paper/muted sections, plus 88px extra top padding when the
+ * paper/muted/ink background split, and the vertical rhythm (56/72/88px bottom
+ * padding between paper/muted sections, plus the same extra top padding when the
  * previous section was ink, since ink sections carry no bottom margin of
  * their own). Pass `py` to opt out of that default — the hero, breaking
  * ticker, quote and newsletter sections each use their own fixed padding.
@@ -42,8 +42,11 @@ export function SectionShell({
   children,
 }: SectionShellProps) {
   const defaultPy = isFirst
-    ? 'pt-7 pb-[72px]'
-    : cn('pb-[88px]', padTop && 'pt-[88px]');
+    ? 'pt-5 pb-12 sm:pt-7 sm:pb-[72px]'
+    : cn(
+        'pb-14 sm:pb-[72px] lg:pb-[88px]',
+        padTop && 'pt-14 sm:pt-[72px] lg:pt-[88px]',
+      );
   const padding = py ?? defaultPy;
   const bgClass =
     background === 'ink'

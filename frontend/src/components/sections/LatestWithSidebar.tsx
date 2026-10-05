@@ -58,7 +58,7 @@ export function LatestWithSidebarSection({
       isFirst={isFirst}
       ariaLabelledBy={headingId}
     >
-      <div className="grid items-start gap-14 lg:grid-cols-[1fr_340px]">
+      <div className="grid items-start gap-10 lg:grid-cols-[1fr_340px] lg:gap-14">
         <div>
           <h2
             id={headingId}
@@ -76,7 +76,7 @@ export function LatestWithSidebarSection({
             ))}
           </div>
         </div>
-        <aside className="flex flex-col gap-9">
+        <aside className="flex flex-col gap-9 self-start lg:sticky lg:top-28">
           {config.widgets.map((key) => renderWidget(key, data.widgets))}
         </aside>
       </div>

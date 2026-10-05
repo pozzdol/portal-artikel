@@ -103,9 +103,9 @@ export async function ArticleView({
   };
 
   return (
-    <Container className="py-12 lg:py-16">
+    <Container className="py-8 sm:py-12 lg:py-16">
       <JsonLd data={newsArticleJsonLd} />
-      <div className="grid grid-cols-1 gap-16 lg:grid-cols-[1fr_340px]">
+      <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[minmax(0,var(--container-prose))_340px] lg:justify-center lg:gap-x-16 xl:gap-x-20">
         <div className="min-w-0">
           {preview ? <PreviewBanner /> : null}
           <Breadcrumb items={breadcrumbItems(article)} />
@@ -116,7 +116,7 @@ export async function ArticleView({
             <ImageBox
               media={article.cover}
               ratio="16/9"
-              sizes="(min-width: 1024px) 66vw, 100vw"
+              sizes="(min-width: 1024px) 640px, 100vw"
               alt={article.title}
               className="mb-3"
               preload
@@ -131,7 +131,7 @@ export async function ArticleView({
           <EventInfoBox article={article} />
           <Prose html={article.content_html} />
           {article.tags.length ? (
-            <div className="mt-10 flex flex-wrap gap-2.5">
+            <div className="mt-10 flex flex-wrap gap-2 sm:gap-2.5">
               {article.tags.map((tag) => (
                 <TagChip key={tag.id} href={tag.url}>
                   {tag.name}

@@ -40,7 +40,7 @@ export function PeopleGridSection({
       />
       <div
         className={cn(
-          'grid grid-cols-1 gap-8 sm:grid-cols-2',
+          'grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-8 md:grid-cols-3',
           config.columns === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3',
         )}
       >

@@ -9,7 +9,7 @@ export async function AuthorBox({ author }: { author: AuthorRef }) {
   const profile = await getAuthor(author.slug);
 
   return (
-    <div className="border-line bg-muted mb-12 flex gap-5 border p-6">
+    <div className="border-line bg-muted mb-12 flex flex-col gap-4 border p-5 sm:flex-row sm:gap-5 sm:p-6">
       <div className="border-line bg-paper relative h-16 w-16 flex-none overflow-hidden rounded-full border">
         {profile.avatar ? (
           <Image

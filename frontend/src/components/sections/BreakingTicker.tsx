@@ -20,10 +20,10 @@ export function BreakingTickerSection({
       padTop={padTop}
       isFirst={isFirst}
       ariaLabel={config.label || 'Berita berjalan'}
-      py="py-3.5"
+      py="py-2.5 sm:py-3.5"
     >
       <div className="flex items-center gap-[18px]">
-        <span className="bg-gold text-on-gold flex-none rounded-[4px] px-3 py-1.5 text-[11px] font-bold tracking-[0.08em] uppercase">
+        <span className="bg-gold text-on-gold flex-none rounded-[4px] px-3 py-1.5 text-[12px] font-bold tracking-[0.08em] uppercase">
           {config.label}
         </span>
         <Marquee items={data.items} speedSeconds={config.speed_seconds} />

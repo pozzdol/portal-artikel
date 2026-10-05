@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Share2 } from 'lucide-react';
+import { useState, useSyncExternalStore } from 'react';
 
 import { Button } from '@/components/ui/shadcn/button';
 
@@ -10,12 +11,20 @@ type ShareButtonsProps = {
   title: string;
 };
 
+const noopSubscribe = () => () => {};
+
 const shareButtonClass =
-  'h-auto rounded-none border-line bg-transparent px-3.5 py-1.5 text-[12.5px] font-medium text-ink shadow-none transition-colors hover:border-ink hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent';
+  'h-11 justify-center rounded-none border-line bg-transparent px-3.5 text-[13px] font-medium lg:h-9 text-ink shadow-none transition-colors hover:border-ink hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent';
 
 /** Share links (WhatsApp, Facebook, X) + copy-to-clipboard; no third-party SDK (doc 06 §5 item 8). */
 export function ShareButtons({ url, title }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
+  // Server snapshot is false, so SSR and hydration match; the client value applies after mount.
+  const canShare = useSyncExternalStore(
+    noopSubscribe,
+    () => typeof navigator.share === 'function',
+    () => false,
+  );
   const encodedUrl = encodeURIComponent(url);
   const encodedTitle = encodeURIComponent(title);
 
@@ -44,11 +53,30 @@ export function ShareButtons({ url, title }: ShareButtonsProps) {
     }
   }
 
+  async function nativeShare() {
+    try {
+      await navigator.share({ title, url });
+    } catch {
+      // User dismissed the share sheet; nothing to do.
+    }
+  }
+
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <span className="text-faint text-[12px] font-bold tracking-[0.1em] uppercase">
+    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+      <span className="text-faint col-span-2 text-[12px] font-bold tracking-[0.1em] uppercase sm:col-span-1">
         Bagikan
       </span>
+      {canShare ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={nativeShare}
+          className={`${shareButtonClass} col-span-2 sm:col-span-1`}
+        >
+          <Share2 className="size-4" aria-hidden="true" />
+          Bagikan…
+        </Button>
+      ) : null}
       {links.map((link) => (
         <Button
           key={link.label}

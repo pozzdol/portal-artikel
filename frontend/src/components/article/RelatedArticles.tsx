@@ -9,7 +9,7 @@ export function RelatedArticles({ items }: { items: ArticleCardData[] }) {
   return (
     <section className="mb-12">
       <WidgetHeading as="h2">Artikel Terkait</WidgetHeading>
-      <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:gap-8">
         {items.map((item) => (
           <ArticleCard key={item.id} article={item} variant="grid-compact" />
         ))}

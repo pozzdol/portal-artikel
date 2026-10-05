@@ -25,7 +25,7 @@ export function Marquee({ items, speedSeconds }: MarqueeProps) {
   } as CSSProperties;
 
   return (
-    <div className="flex-1 overflow-hidden">
+    <div className="marquee-fade flex-1 overflow-hidden">
       <div
         className="marquee flex w-max gap-16 whitespace-nowrap"
         style={style}

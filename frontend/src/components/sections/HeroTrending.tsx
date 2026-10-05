@@ -31,13 +31,13 @@ export function HeroTrendingSection({
       isFirst={isFirst}
       ariaLabel={config.eyebrow || config.title || 'Sorotan utama'}
     >
-      <div className="grid items-start gap-14 lg:grid-cols-[1fr_380px]">
+      <div className="grid items-start gap-10 md:grid-cols-[1fr_300px] lg:grid-cols-[1fr_340px] lg:gap-14 xl:grid-cols-[1fr_380px]">
         <ArticleCard article={hero} variant="hero" preload />
 
         {data.trending.length > 0 ? (
           <aside aria-label={config.trending_title || 'Trending'}>
             <WidgetHeading as="h2">{config.trending_title}</WidgetHeading>
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-4 lg:gap-5">
               {data.trending
                 .slice(0, config.trending_limit)
                 .map((article, i) =>
@@ -52,7 +52,7 @@ export function HeroTrendingSection({
                     <Link
                       key={article.id}
                       href={article.url}
-                      className="flex items-start gap-3.5 hover:underline"
+                      className="flex min-h-11 items-start gap-3.5 hover:underline"
                     >
                       <span className="text-gold-strong min-w-[26px] font-serif text-[26px] leading-none font-semibold">
                         {String(i + 1).padStart(2, '0')}

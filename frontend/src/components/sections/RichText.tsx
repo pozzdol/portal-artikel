@@ -10,7 +10,7 @@ import type {
 import { SectionShell } from './SectionShell';
 
 const MAX_WIDTH_CLASS: Record<RichTextConfig['max_width'], string> = {
-  prose: 'max-w-[720px]',
+  prose: 'max-w-prose',
   wide: 'max-w-[960px]',
   full: 'max-w-none',
 };

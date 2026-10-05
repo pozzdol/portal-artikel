@@ -11,15 +11,15 @@ export function ArticleHeader({ article }: { article: ArticleDetail }) {
       <Eyebrow size="md" className="mb-3.5">
         {article.category.name}
       </Eyebrow>
-      <h1 className="text-ink mb-5 font-serif text-[36px] leading-[1.12] font-semibold tracking-[-0.01em] text-balance lg:text-[52px]">
+      <h1 className="text-ink mb-5 font-serif text-[30px] leading-[1.15] font-semibold tracking-[-0.01em] text-balance sm:text-[36px] lg:text-[44px] xl:text-[48px]">
         {article.title}
       </h1>
       {article.excerpt ? (
-        <p className="text-body mb-[26px] max-w-[640px] text-[17px] leading-[1.7]">
+        <p className="text-body mb-[26px] max-w-[640px] text-[16px] leading-[1.7] sm:text-[17px]">
           {article.excerpt}
         </p>
       ) : null}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <div className="border-line bg-muted relative h-8 w-8 flex-none overflow-hidden rounded-full border">
           {article.author.avatar ? (
             <Image

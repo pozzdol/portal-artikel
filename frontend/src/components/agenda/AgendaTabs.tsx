@@ -29,7 +29,7 @@ export function AgendaTabs({ active, hrefFor }: AgendaTabsProps) {
             href={hrefFor(tab.key)}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
-              '-mb-px border-b-2 pb-3 text-[14.5px] font-medium',
+              '-mb-px inline-flex min-h-11 items-center border-b-2 pb-3 text-[14.5px] font-medium lg:min-h-0',
               isActive
                 ? 'border-gold text-ink'
                 : 'text-faint hover:text-ink border-transparent',

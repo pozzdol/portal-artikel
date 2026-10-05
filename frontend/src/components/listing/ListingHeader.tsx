@@ -17,11 +17,11 @@ export function ListingHeader({
   children,
 }: ListingHeaderProps) {
   return (
-    <header className="border-line mb-11 border-b pb-9">
+    <header className="border-line mb-8 border-b pb-7 sm:mb-11 sm:pb-9">
       <Eyebrow size="md" className="mb-3.5">
         {eyebrow}
       </Eyebrow>
-      <h1 className="text-ink mb-3.5 font-serif text-[36px] leading-[1.2] font-semibold lg:text-[44px]">
+      <h1 className="text-ink mb-3.5 font-serif text-[32px] leading-[1.2] font-semibold sm:text-[36px] lg:text-[44px]">
         {title}
       </h1>
       {description ? (

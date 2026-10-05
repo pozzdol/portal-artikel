@@ -37,7 +37,7 @@ export function VideoGallerySection({
         moreLink={config.more_link}
       />
       {config.layout === 'feature' ? (
-        <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr]">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr] lg:gap-7 sm:[&>*:first-child]:col-span-2 lg:[&>*:first-child]:col-span-1">
           {data.items.map((video, i) => (
             <VideoCard
               key={video.id}
@@ -48,7 +48,7 @@ export function VideoGallerySection({
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-7">
           {data.items.map((video) => (
             <VideoCard
               key={video.id}

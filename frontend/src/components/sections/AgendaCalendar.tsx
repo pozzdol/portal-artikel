@@ -41,8 +41,8 @@ export function AgendaCalendarSection({
       />
       <div
         className={cn(
-          'grid gap-14',
-          showCalendar && 'lg:grid-cols-[1fr_340px]',
+          'grid gap-10 lg:gap-14',
+          showCalendar && 'md:grid-cols-[1fr_320px] lg:grid-cols-[1fr_340px]',
         )}
       >
         <div className="flex flex-col">
@@ -51,14 +51,16 @@ export function AgendaCalendarSection({
           ))}
         </div>
         {showCalendar && data.calendar ? (
-          <MonthCalendar
-            month={data.calendar.month}
-            days={data.calendar.days_with_events.map((d) => ({
-              day: d.day,
-              slug: d.slug,
-              isNext: d.is_next,
-            }))}
-          />
+          <div className="self-start md:sticky md:top-28">
+            <MonthCalendar
+              month={data.calendar.month}
+              days={data.calendar.days_with_events.map((d) => ({
+                day: d.day,
+                slug: d.slug,
+                isNext: d.is_next,
+              }))}
+            />
+          </div>
         ) : null}
       </div>
     </SectionShell>

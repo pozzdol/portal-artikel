@@ -13,7 +13,7 @@ type SubcategoryPillsProps = {
 };
 
 const pillBase =
-  'h-auto w-fit rounded-full px-3.5 py-1.5 text-[12px] font-medium normal-case transition-colors';
+  'min-h-11 w-fit shrink-0 rounded-full px-4 text-[13px] font-medium normal-case transition-colors lg:min-h-0 lg:px-3.5 lg:py-1.5 lg:text-[12.5px]';
 
 const activePillClass =
   'border-ink bg-ink text-paper hover:border-ink [a]:hover:bg-ink [a]:hover:text-paper';
@@ -30,7 +30,10 @@ export function SubcategoryPills({
   if (items.length === 0) return null;
 
   return (
-    <nav aria-label="Subkategori" className="mb-11 flex flex-wrap gap-2.5">
+    <nav
+      aria-label="Subkategori"
+      className="no-scrollbar -mx-5 mb-8 flex flex-nowrap gap-2.5 overflow-x-auto px-5 pb-1 sm:mx-0 sm:mb-11 sm:flex-wrap sm:px-0"
+    >
       <Badge
         asChild
         variant="outline"

@@ -14,7 +14,7 @@ export async function ArticleSidebar() {
   if (!trending.length && !popular.length) return null;
 
   return (
-    <aside className="flex flex-col gap-11">
+    <aside className="flex flex-col gap-9 self-start lg:sticky lg:top-28 lg:gap-11">
       {trending.length ? (
         <div>
           <WidgetHeading as="h2">Trending Hari Ini</WidgetHeading>
@@ -33,14 +33,19 @@ export async function ArticleSidebar() {
       {popular.length ? (
         <div>
           <WidgetHeading as="h2">Artikel Populer</WidgetHeading>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {popular.map((article, index) => (
               <Link
                 key={article.id}
                 href={article.url}
-                className="text-ink text-[14px] leading-[1.4] font-medium hover:underline"
+                className="flex min-h-11 items-start gap-3.5 hover:underline"
               >
-                {index + 1}. {article.title}
+                <span className="text-gold-strong min-w-[26px] font-serif text-[26px] leading-none font-semibold">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <p className="text-ink text-[14px] leading-[1.4] font-medium">
+                  {article.title}
+                </p>
               </Link>
             ))}
           </div>

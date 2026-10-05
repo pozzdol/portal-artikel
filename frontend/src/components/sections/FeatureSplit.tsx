@@ -45,7 +45,7 @@ export function FeatureSplitSection({
         eyebrow={config.eyebrow}
         moreLink={config.more_link}
       />
-      <div className="grid gap-14 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr] lg:gap-14">
         <article>
           <Link href={featured.url} tabIndex={-1} aria-hidden="true">
             <ImageBox
