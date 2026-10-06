@@ -74,16 +74,16 @@ func TestUpDownUp(t *testing.T) {
 	var adminPerms int
 	require.NoError(t, pool.QueryRow(ctx, `SELECT count(*) FROM role_permissions rp
 		JOIN roles r ON r.id = rp.role_id WHERE r.code = 'admin'`).Scan(&adminPerms))
-	require.Equal(t, 18, adminPerms)
-	require.Equal(t, 40, countRows("role_permissions"))
+	require.Equal(t, 19, adminPerms)
+	require.Equal(t, 41, countRows("role_permissions"))
 
 	v, err := Version(ctx, pool)
 	require.NoError(t, err)
-	require.EqualValues(t, 12, v)
+	require.EqualValues(t, 13, v)
 
 	var status bytes.Buffer
 	require.NoError(t, Status(ctx, pool, &status))
-	require.Contains(t, status.String(), "00012_users_phone.sql")
+	require.Contains(t, status.String(), "00013_admin_users_manage.sql")
 	require.NotContains(t, status.String(), "pending")
 
 	// Smoke-test constraints and the search_vector trigger.
@@ -112,7 +112,18 @@ func TestUpDownUp(t *testing.T) {
 	require.Equal(t, 25, countTables())
 	require.Equal(t, 22, countRows("permissions"))
 
-	// One step down (00012 drops users.phone) and back up.
+	// One step down (00013 revokes users.manage from admin), then 00012
+	// (drops users.phone), and back up.
+	adminHasUsersManage := func() bool {
+		var ok bool
+		require.NoError(t, pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM role_permissions rp
+			JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id
+			WHERE r.code = 'admin' AND p.code = 'users.manage')`).Scan(&ok))
+		return ok
+	}
+	require.True(t, adminHasUsersManage())
+	require.NoError(t, Down(ctx, pool))
+	require.False(t, adminHasUsersManage())
 	hasPhone := func() bool {
 		var ok bool
 		require.NoError(t, pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM information_schema.columns
@@ -126,5 +137,6 @@ func TestUpDownUp(t *testing.T) {
 	require.EqualValues(t, 11, v)
 	require.NoError(t, Up(ctx, pool))
 	require.True(t, hasPhone())
+	require.True(t, adminHasUsersManage())
 	require.Equal(t, 22, countRows("permissions"))
 }

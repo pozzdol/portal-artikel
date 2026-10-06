@@ -109,10 +109,12 @@ Constraint: `CHECK (NOT can_login OR (password_hash IS NOT NULL AND (email IS NO
 | `homepage.manage` · `menus.manage` | ✅ | ✅ |
 | `authors.manage` (kelola profil penulis `can_login=false`) | ✅ | ✅ |
 | `settings.manage` (identitas situs, kontak, sosmed, SEO default) | ✅ | ❌ |
-| `users.manage` (akun login, reset password, assign role) | ✅ | ❌ |
+| `users.manage` (akun login, reset password, assign role) | ✅ | ✅ ¹ |
 | `roles.manage` | ✅ | ❌ |
 | `audit.view` | ✅ | ❌ |
 
+> ¹ Sejak migrasi `00013` (keputusan owner 2026-10-06). Admin tidak dapat mengubah, me-reset sandi, atau menonaktifkan akun super admin, dan tidak dapat memberikan role `super_admin` (dijaga di `internal/user`).
+>
 > Pembagian `admin` di atas adalah **usulan default** dan bisa diubah dari data kapan saja.
 > Untuk role `editor` di masa depan cukup INSERT role baru + permission-nya.
 

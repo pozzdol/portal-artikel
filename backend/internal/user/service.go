@@ -263,6 +263,9 @@ func (s *Service) Create(ctx context.Context, a Actor, in CreateInput) (*UserDet
 		if err != nil {
 			return err
 		}
+		if err := guardSuperAdmin(ctx, q, a, false, hasSuperAdminRole(roles)); err != nil {
+			return err
+		}
 
 		var slug string
 		if in.Slug != nil {
@@ -421,6 +424,10 @@ func (s *Service) Update(ctx context.Context, a Actor, id int64, in UpdateInput)
 			}
 		} else if convertingToAuthor {
 			willHaveSuperAdmin = false
+		}
+
+		if err := guardSuperAdmin(ctx, q, a, hadSuperAdmin, hasSuperAdminRole(newRoles)); err != nil {
+			return err
 		}
 
 		willRemainActiveSuperAdmin := newActive && newCanLogin && willHaveSuperAdmin
@@ -603,7 +610,8 @@ func (s *Service) Update(ctx context.Context, a Actor, id int64, in UpdateInput)
 }
 
 // ResetPassword sets a new password for a login-capable user (users.manage
-// only) and revokes all of their refresh token families.
+// only; a super admin target needs a super admin actor) and revokes all of
+// their refresh token families.
 func (s *Service) ResetPassword(ctx context.Context, a Actor, id int64, in ResetPasswordInput) error {
 	mustChange := true
 	if in.MustChangePassword != nil {
@@ -620,6 +628,13 @@ func (s *Service) ResetPassword(ctx context.Context, a Actor, id int64, in Reset
 		}
 		if !row.CanLogin {
 			return apperr.Conflict("Pengguna ini tidak memiliki akses login.")
+		}
+		targetRoles, err := q.ListUserRoles(ctx, id)
+		if err != nil {
+			return fmt.Errorf("user: roles for reset password: %w", err)
+		}
+		if err := guardSuperAdmin(ctx, q, a, containsRoleCode(targetRoles, rbac.RoleSuperAdmin), false); err != nil {
+			return err
 		}
 		hash, err := auth.HashPassword(in.NewPassword)
 		if err != nil {
@@ -669,11 +684,14 @@ func (s *Service) SetActive(ctx context.Context, a Actor, id int64, active bool)
 		if row.IsActive == active {
 			return nil
 		}
+		roles, err := q.ListUserRoles(ctx, id)
+		if err != nil {
+			return fmt.Errorf("user: roles for set-active: %w", err)
+		}
+		if err := guardSuperAdmin(ctx, q, a, containsRoleCode(roles, rbac.RoleSuperAdmin), false); err != nil {
+			return err
+		}
 		if !active {
-			roles, err := q.ListUserRoles(ctx, id)
-			if err != nil {
-				return fmt.Errorf("user: roles for set-active: %w", err)
-			}
 			wasActiveSuperAdmin := row.IsActive && row.CanLogin && containsRoleCode(roles, rbac.RoleSuperAdmin)
 			if err := lastSuperAdmin(ctx, q, id, wasActiveSuperAdmin, false); err != nil {
 				return err

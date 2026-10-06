@@ -8,12 +8,13 @@ import {
 } from '@/components/ui/shadcn/field';
 import { Skeleton } from '@/components/ui/shadcn/skeleton';
 import { usePermission } from '@/components/admin/shell/PermissionGate';
+import { useMe } from '@/lib/api/admin/auth';
 import { useRoles } from '@/lib/api/admin/roles';
 
-/** Role multi-select for the user form. GET /admin/roles needs `roles.manage`
- * (docs 07 §3.12 keeps role management super-admin only), so an actor who
- * only holds `users.manage` sees a note instead of the checklist and the
- * form simply omits `role_ids` (leaves roles unchanged). */
+/** Role multi-select for the user form. GET /admin/roles is open to
+ * `roles.manage` and `users.manage`; an actor with neither sees a note instead
+ * and the form omits `role_ids` (leaves roles unchanged). Only a super admin
+ * may grant super_admin, so the option is hidden from everyone else. */
 export function RoleChecklist({
   value,
   onChange,
@@ -23,8 +24,14 @@ export function RoleChecklist({
   onChange: (ids: number[]) => void;
   disabled?: boolean;
 }) {
-  const canList = usePermission('roles.manage');
+  const canList = usePermission('roles.manage', 'users.manage');
+  const { data: me } = useMe();
   const { data: roles, isLoading } = useRoles({ enabled: canList });
+  const actorIsSuperAdmin =
+    me?.roles.some((r) => r.code === 'super_admin') ?? false;
+  const choices = (roles ?? []).filter(
+    (r) => actorIsSuperAdmin || r.code !== 'super_admin',
+  );
 
   if (!canList) {
     return (
@@ -52,7 +59,7 @@ export function RoleChecklist({
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {(roles ?? []).map((r) => (
+          {choices.map((r) => (
             <label
               key={r.id}
               className="flex items-center gap-2 text-sm font-normal"

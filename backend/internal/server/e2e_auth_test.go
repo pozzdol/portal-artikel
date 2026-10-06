@@ -291,7 +291,7 @@ func TestE2EAuth(t *testing.T) {
 		assert.Equal(t, http.StatusUnauthorized, res.Status)
 	})
 
-	t.Run("admin role: no audit logs, authors only in users", func(t *testing.T) {
+	t.Run("admin role: no audit logs, manages users but not super admins", func(t *testing.T) {
 		testdb.CreateUser(t, pool, testdb.UserOpts{DisplayName: "Penulis Tamu", IsActive: true})
 		const email, pw = "admin-biasa@test.local", "Password-Admin-123"
 		testdb.CreateUser(t, pool, testdb.UserOpts{
@@ -305,17 +305,27 @@ func TestE2EAuth(t *testing.T) {
 		assert.Equal(t, http.StatusForbidden, res.Status)
 		assert.Equal(t, "forbidden", res.errCode())
 
+		// Reading roles (for the user form) is allowed; changing them is not.
 		res = c.do(http.MethodGet, "/api/v1/admin/roles", nil, false)
+		assert.Equal(t, http.StatusOK, res.Status, res.Body)
+		res = c.do(http.MethodGet, "/api/v1/admin/permissions", nil, false)
 		assert.Equal(t, http.StatusForbidden, res.Status)
 
 		res = c.do(http.MethodGet, "/api/v1/admin/users", nil, false)
 		require.Equal(t, http.StatusOK, res.Status, res.Body)
 		items, _ := res.Body["data"].([]any)
-		require.NotEmpty(t, items)
+		var sawLogin bool
 		for _, it := range items {
-			u := it.(map[string]any)
-			assert.Equal(t, false, u["can_login"], "admin must only see authors: %v", u)
+			if u := it.(map[string]any); u["can_login"] == true {
+				sawLogin = true
+			}
 		}
+		assert.True(t, sawLogin, "admin must see login accounts too")
+
+		res = c.do(http.MethodPost, fmt.Sprintf("/api/v1/admin/users/%d/reset-password", superID),
+			map[string]any{"new_password": "Password-Baru-123"}, true)
+		assert.Equal(t, http.StatusForbidden, res.Status, res.Body)
+		assert.Equal(t, "Hanya super admin yang dapat mengelola akun super admin atau memberikan peran super admin.", res.errMessage())
 	})
 
 	t.Run("sixth wrong login is rate limited", func(t *testing.T) {
@@ -341,7 +351,8 @@ func TestE2EAuth(t *testing.T) {
 		res := sa.do(http.MethodPost, fmt.Sprintf("/api/v1/admin/users/%d/deactivate", superID), nil, true)
 		assert.Equal(t, http.StatusConflict, res.Status, res.Body)
 
-		// A non-super-admin user manager hits the last-super-admin rule.
+		// A non-super-admin user manager may not touch a super admin account at
+		// all (the last-super-admin rule is covered in internal/user tests).
 		res = sa.do(http.MethodPost, "/api/v1/admin/roles", map[string]any{
 			"code": "pengelola_user", "name": "Pengelola User", "permission_codes": []string{rbac.PermUsersManage},
 		}, true)
@@ -354,9 +365,8 @@ func TestE2EAuth(t *testing.T) {
 		m := newClient(t, srv)
 		m.mustLogin(email, pw)
 		res = m.do(http.MethodPost, fmt.Sprintf("/api/v1/admin/users/%d/deactivate", superID), nil, true)
-		assert.Equal(t, http.StatusConflict, res.Status, res.Body)
-		assert.Equal(t, "conflict", res.errCode())
-		assert.Equal(t, "Minimal satu super admin aktif harus tetap ada.", res.errMessage())
+		assert.Equal(t, http.StatusForbidden, res.Status, res.Body)
+		assert.Equal(t, "forbidden", res.errCode())
 
 		var active bool
 		require.NoError(t, pool.QueryRow(context.Background(), "SELECT is_active FROM users WHERE id = $1", superID).Scan(&active))

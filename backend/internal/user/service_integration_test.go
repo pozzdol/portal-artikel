@@ -190,7 +190,12 @@ func TestServiceLastSuperAdminProtection(t *testing.T) {
 	pool := testdb.New(t)
 	svc, _ := newService(pool)
 	adminID, _, _ := testdb.SuperAdmin(t, pool)
-	other := actorWith(999999, rbac.PermUsersManage) // acting as a different super admin
+	// The actor must hold super_admin to touch a super admin account; it is
+	// inactive so adminID stays the only active super admin.
+	otherID := testdb.CreateUser(t, pool, testdb.UserOpts{
+		Email: "super-lain@example.test", Password: "kata-sandi-uji-1", CanLogin: true, IsActive: false, Roles: []string{"super_admin"},
+	})
+	other := actorWith(otherID, rbac.PermUsersManage)
 
 	err := svc.SetActive(context.Background(), other, adminID, false)
 	assert.True(t, errors.Is(err, apperr.ErrConflict), "expected conflict, got %v", err)
@@ -470,4 +475,63 @@ func TestServiceResetPasswordFlagAndSearch(t *testing.T) {
 		}
 		assert.True(t, found, "q=%q", q)
 	}
+}
+
+func TestServiceAdminCannotTouchSuperAdmin(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+	svc, inv := newService(pool)
+	superID, _, _ := testdb.SuperAdmin(t, pool)
+	adminID := testdb.CreateUser(t, pool, testdb.UserOpts{
+		Phone: "8123400001", Password: "kata-sandi-uji-1", CanLogin: true, IsActive: true, Roles: []string{"admin"},
+	})
+	peerID := testdb.CreateUser(t, pool, testdb.UserOpts{
+		Phone: "8123400002", Password: "kata-sandi-uji-1", CanLogin: true, IsActive: true, Roles: []string{"admin"},
+	})
+	admin := actorWith(adminID, rbac.PermUsersManage, rbac.PermAuthorsManage)
+	superRole := roleID(t, pool, "super_admin")
+	adminRole := roleID(t, pool, "admin")
+	forbidden := func(err error) {
+		t.Helper()
+		assert.True(t, errors.Is(err, apperr.ErrForbidden), "expected forbidden, got %v", err)
+	}
+
+	// Seeing every account is allowed, super admin included.
+	items, _, err := svc.List(ctx, admin, user.ListFilter{Page: httpx.Pagination{Page: 1, PerPage: 50}})
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, len(items), 3)
+	_, err = svc.Get(ctx, admin, superID)
+	require.NoError(t, err)
+
+	// A super admin account is off-limits.
+	forbidden(svc.ResetPassword(ctx, admin, superID, user.ResetPasswordInput{NewPassword: "kata-sandi-baru-1"}))
+	forbidden(svc.SetActive(ctx, admin, superID, false))
+	_, err = svc.Update(ctx, admin, superID, user.UpdateInput{DisplayName: "Diubah Admin"})
+	forbidden(err)
+	assert.False(t, inv.called(superID))
+
+	// So is granting super_admin, on create or update.
+	_, err = svc.Create(ctx, admin, user.CreateInput{
+		DisplayName: "Calon Super", Phone: ptr("08123400003"), Password: ptr("kata-sandi-uji-1"),
+		CanLogin: true, RoleIDs: []int64{superRole},
+	})
+	forbidden(err)
+	_, err = svc.Update(ctx, admin, peerID, user.UpdateInput{DisplayName: "Rekan Admin", RoleIDs: []int64{adminRole, superRole}})
+	forbidden(err)
+
+	// Fellow admins can still be managed.
+	_, err = svc.Update(ctx, admin, peerID, user.UpdateInput{DisplayName: "Rekan Admin", RoleIDs: []int64{adminRole}})
+	require.NoError(t, err)
+	require.NoError(t, svc.ResetPassword(ctx, admin, peerID, user.ResetPasswordInput{NewPassword: "kata-sandi-baru-1"}))
+	require.NoError(t, svc.SetActive(ctx, admin, peerID, false))
+	_, err = svc.Create(ctx, admin, user.CreateInput{
+		DisplayName: "Admin Baru", Phone: ptr("08123400004"), Password: ptr("kata-sandi-uji-1"),
+		CanLogin: true, RoleIDs: []int64{adminRole},
+	})
+	require.NoError(t, err)
+
+	// A super admin keeps full control.
+	super := actorWith(superID, rbac.PermUsersManage)
+	_, err = svc.Update(ctx, super, peerID, user.UpdateInput{DisplayName: "Rekan Admin", RoleIDs: []int64{adminRole, superRole}})
+	require.NoError(t, err)
 }

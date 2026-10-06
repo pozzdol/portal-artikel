@@ -121,7 +121,7 @@ export function UserFormDialog({
 }: UserFormDialogProps) {
   const create = useCreateUser();
   const update = useUpdateUser();
-  const canListRoles = usePermission('roles.manage');
+  const canListRoles = usePermission('roles.manage', 'users.manage');
   const schema = useMemo(
     () => buildSchema(mode !== 'edit', mode !== 'edit' || !!user?.can_login),
     [mode, user?.can_login],

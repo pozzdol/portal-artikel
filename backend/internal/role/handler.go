@@ -24,7 +24,8 @@ func NewHandler(svc *Service) *Handler { return &Handler{svc: svc} }
 // GET/POST /roles, GET/PUT/DELETE /roles/{id} and GET /permissions all
 // require the roles.manage permission.
 func (h *Handler) Register(r chi.Router, guard rbac.Guard) {
-	r.With(guard(rbac.PermRolesManage)).Get("/roles", h.list)
+	// users.manage may read the list to assign roles in the user form.
+	r.With(guard(rbac.PermRolesManage, rbac.PermUsersManage)).Get("/roles", h.list)
 	r.With(guard(rbac.PermRolesManage)).Post("/roles", h.create)
 	r.With(guard(rbac.PermRolesManage)).Get("/roles/{id}", h.get)
 	r.With(guard(rbac.PermRolesManage)).Put("/roles/{id}", h.update)

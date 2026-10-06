@@ -285,12 +285,12 @@ CRUD standar dengan pola yang sama:
 | GET/PUT | `/users/{id}` | idem | |
 | POST | `/users/{id}/reset-password` | `users.manage` | `{new_password, must_change_password?=true}`: target harus `can_login=true`, set hash, set flag, bump perm_version, cabut semua sesi |
 | POST | `/users/{id}/deactivate` · `/activate` | `users.manage` | Menolak menonaktifkan super admin terakhir; deactivate cabut semua sesi target |
-| GET | `/roles` | `roles.manage` | Role + permissions |
+| GET | `/roles` | `roles.manage` atau `users.manage` | Role + permissions (`users.manage` membacanya untuk form pengguna) |
 | POST/PUT/DELETE | `/roles/{id}` | `roles.manage` | POST body: `{code regex ^[a-z][a-z0-9_]*$, name, description?, permission_codes[]}`. Code immutable. DELETE: role `is_system` → 409, role masih dipakai → 409 |
 | GET | `/permissions` | `roles.manage` | |
 | GET | `/audit-logs` | `audit.view` | Filter: `?entity_type=&action=&user_id=&from=RFC3339/YYYY-MM-DD&to=RFC3339/YYYY-MM-DD&page=&per_page=` (default 20, max 100). Date range in WIB; date-only `to` covers whole day |
 
-**POST /users body:** `{email?, phone?, password?, display_name required, slug?, title?, bio?, avatar_media_id?, can_login bool, is_active?, must_change_password? bool, role_ids[]}`. Create login user: (email OR phone) & password required. Convert author→login: requires password + (email OR phone). `must_change_password` default `true` saat admin menyediakan password. 422 if duplicate email/phone/slug, if unknown role_ids, if bad slug regex, if bad phone format, if login user tanpa email/phone. 403 if `authors.manage` actor tries login/phone fields. 409 if self-role/status/deactivate, if last active super admin would be deactivated. Converting to author clears phone.
+**POST /users body:** `{email?, phone?, password?, display_name required, slug?, title?, bio?, avatar_media_id?, can_login bool, is_active?, must_change_password? bool, role_ids[]}`. Create login user: (email OR phone) & password required. Convert author→login: requires password + (email OR phone). `must_change_password` default `true` saat admin menyediakan password. 422 if duplicate email/phone/slug, if unknown role_ids, if bad slug regex, if bad phone format, if login user tanpa email/phone. 403 if `authors.manage` actor tries login/phone fields. 409 if self-role/status/deactivate, if last active super admin would be deactivated. 403 `forbidden` ("Hanya super admin yang dapat mengelola akun super admin atau memberikan peran super admin.") bila aktor bukan super admin lalu mengubah/reset sandi/menonaktifkan akun super admin, atau memberikan role `super_admin` (POST/PUT/reset-password/activate/deactivate). Converting to author clears phone.
 
 **PUT /users/{id} body:** same as POST, fields optional. `phone` dapat diupdate (dengan normalisasi). Update own role/is_active/can_login → 409. Change permissions bumps user's `perm_version` (forces token_expired on next request).
 

@@ -162,6 +162,38 @@ func selfProtection(a Actor, targetID int64, changingRoles, changingCanLogin, ch
 	return nil
 }
 
+const msgSuperAdminOnly = "Hanya super admin yang dapat mengelola akun super admin atau memberikan peran super admin."
+
+// guardSuperAdmin keeps super admin accounts and the super_admin role out of
+// reach of actors who are not super admins themselves: users.manage alone
+// (held by admin) must not allow resetting a super admin's password and
+// signing in as them, or promoting anyone to super admin. targetIsSuper is
+// whether the target account currently holds super_admin; grantsSuper whether
+// the write would assign it.
+func guardSuperAdmin(ctx context.Context, q *dbgen.Queries, a Actor, targetIsSuper, grantsSuper bool) error {
+	if !targetIsSuper && !grantsSuper {
+		return nil
+	}
+	roles, err := q.ListUserRoles(ctx, a.UserID)
+	if err != nil {
+		return fmt.Errorf("user: actor roles: %w", err)
+	}
+	if !containsRoleCode(roles, rbac.RoleSuperAdmin) {
+		return apperr.Forbidden(msgSuperAdminOnly)
+	}
+	return nil
+}
+
+// hasSuperAdminRole reports whether resolved roles include super_admin.
+func hasSuperAdminRole(roles []dbgen.Role) bool {
+	for _, r := range roles {
+		if r.Code == rbac.RoleSuperAdmin {
+			return true
+		}
+	}
+	return false
+}
+
 // lastSuperAdmin rejects a change that would leave no active super admin.
 // wasActiveSuperAdmin/willRemainActiveSuperAdmin are computed by the caller
 // from the target's current and pending is_active/can_login/role state.

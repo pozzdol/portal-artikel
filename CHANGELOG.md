@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Password validation: min 10 (atau 8 jika --must-change), max 128, tidak boleh di argv
 
 ### Changed
+- **Role admin kini memegang `users.manage`** (migrasi `00013`): admin dapat melihat dan mengelola akun login lain, kecuali akun super admin (ubah, reset sandi, nonaktifkan → 403) dan pemberian role `super_admin`. `GET /admin/roles` juga terbuka untuk `users.manage`.
+- Gambar Open Graph bermerek otomatis (`/api/og/{jenis}/{slug}.jpg`) untuk semua halaman publik.
 - `/auth/login` response sekarang includes `phone` dan `must_change_password` fields
 - `/auth/me` response sekarang includes `phone` dan `must_change_password` fields
 - Users CRUD: `phone` field dengan normalisasi + validation; `must_change_password` parameter pada create/reset-password

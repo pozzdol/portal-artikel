@@ -71,6 +71,10 @@ export function UsersView() {
   const { data: me } = useMe();
   const hasUsersManage = usePermission('users.manage');
   const hasAuthorsManage = usePermission('authors.manage');
+  // Super admin accounts are managed by super admins only (backend enforces
+  // it too), so their row actions are hidden from other user managers.
+  const actorIsSuperAdmin =
+    me?.roles.some((r) => r.code === 'super_admin') ?? false;
 
   const { params, set } = useListParams({
     page: 1,
@@ -335,6 +339,11 @@ export function UsersView() {
         }
         rowActions={(row) => {
           const isSelf = row.id === me?.id;
+          if (
+            !actorIsSuperAdmin &&
+            row.roles.some((r) => r.code === 'super_admin')
+          )
+            return null;
           const fetchingThis = pendingId === row.id;
           const canEdit = row.can_login
             ? hasUsersManage
