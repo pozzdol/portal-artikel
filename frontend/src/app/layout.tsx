@@ -17,10 +17,19 @@ const inter = Inter({
   display: 'swap',
 });
 
+// Brand icons served from public/ (not app/ file conventions, which would
+// override the favicon an editor sets in Pengaturan situs; see the public layout).
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
   ),
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '48x48' },
+      { url: '/brand/icon-192.png', type: 'image/png', sizes: '192x192' },
+    ],
+    apple: '/brand/apple-touch-icon.png',
+  },
 };
 
 /**

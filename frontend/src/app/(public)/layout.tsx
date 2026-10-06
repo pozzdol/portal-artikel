@@ -11,6 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const name = identity?.name ?? 'ALMAIDAH';
   const tagline = identity?.tagline ?? 'Alumni Darul Hikmah Sumedang';
   const ogMedia = seo?.default_og_media ?? null;
+  const favicon = identity?.favicon ?? null;
   const verification = seo?.google_site_verification?.trim();
 
   return {
@@ -38,6 +39,8 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: { card: ogMedia ? 'summary_large_image' : 'summary' },
     ...(verification ? { verification: { google: verification } } : {}),
+    // Favicon chosen in Pengaturan situs replaces the static brand icons.
+    ...(favicon ? { icons: { icon: favicon.url, apple: favicon.url } } : {}),
     alternates: {
       types: { 'application/rss+xml': absoluteUrl('/feed.xml') },
     },
