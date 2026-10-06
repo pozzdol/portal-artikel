@@ -226,9 +226,10 @@ Butir berikut **bukan pekerjaan kode** dan tidak bisa dikerjakan agen. Semuanya 
 - **Sekarang:** sitemap umum (54 URL) dan RSS ada; **tidak ada news sitemap** (artikel 48 jam terakhir, format `news:news`) yang dibutuhkan portal berita untuk Google News; belum ada `robots: max-image-preview:large`.
 - **Rencana:** route `/sitemap-news.xml` + daftarkan di `robots.txt`; tambahkan `max-image-preview:large` di metadata artikel; daftar Google Search Console & Google News Publisher (butuh O5).
 
-#### SEO-2 · Gambar OG otomatis untuk artikel tanpa sampul — **P2 · S**
+#### SEO-2 · Gambar OG otomatis untuk artikel tanpa sampul — **P2 · S** · ☑ selesai (2026-10-06)
 - **Sekarang:** fallback OG/JSON-LD → gambar OG default (belum diisi) → logo; semua artikel seed tanpa sampul sehingga pratinjau tautan di WhatsApp/sosmed memakai logo.
 - **Rencana:** `opengraph-image.tsx` per artikel memakai `next/og` (judul serif + eyebrow kategori + logo, palet hitam-emas).
+- **Hasil:** route `/api/og/{jenis}/{slug}.jpg` (bukan `opengraph-image.tsx`, agar OG pilihan editor tetap menang) untuk artikel, video, agenda, tokoh, penulis, halaman, rubrik, tag, plus kartu situs; lihat docs/06 "Gambar OG otomatis". `max-image-preview:large` dari SEO-1 ikut ditambahkan.
 
 #### SEO-3 · Validasi eksternal — **P1 · S** (setelah O5)
 - Rich Results Test, PageSpeed Insights di domain produksi (skor Lighthouse saat ini diukur di localhost tanpa TLS/HTTP2), Search Console coverage.

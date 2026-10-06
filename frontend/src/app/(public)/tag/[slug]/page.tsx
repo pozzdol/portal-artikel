@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 
-import { getTag, listArticles } from '@/lib/api/queries';
+import { getSite, getTag, listArticles } from '@/lib/api/queries';
 import { absoluteUrl } from '@/lib/site-url';
+import { baseOpenGraph, generatedOgImage, LARGE_CARD } from '@/lib/og/meta';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Container } from '@/components/ui/Container';
 import { Pagination } from '@/components/ui/Pagination';
@@ -26,7 +27,8 @@ export async function generateMetadata({
   const { slug } = await params;
   const { page: pageRaw } = await searchParams;
   const page = parsePage(firstValue(pageRaw));
-  const tag = await getTag(slug);
+  const [tag, site] = await Promise.all([getTag(slug), getSite()]);
+  const description = `Artikel dengan tag "${tag.name}" di ALMAIDAH.`;
 
   const title =
     page > 1 ? `Tag: ${tag.name} — Halaman ${page}` : `Tag: ${tag.name}`;
@@ -34,12 +36,20 @@ export async function generateMetadata({
 
   return {
     title,
-    description: `Artikel dengan tag "${tag.name}" di ALMAIDAH.`,
+    description,
     alternates: {
       canonical: absoluteUrl(canonicalPath),
       types: { 'application/rss+xml': absoluteUrl('/feed.xml') },
     },
-    openGraph: { type: 'website', title, url: absoluteUrl(canonicalPath) },
+    openGraph: {
+      ...baseOpenGraph(site),
+      type: 'website',
+      title,
+      description,
+      url: absoluteUrl(canonicalPath),
+      images: [generatedOgImage('tag', tag.slug, tag.name)],
+    },
+    twitter: LARGE_CARD,
   };
 }
 

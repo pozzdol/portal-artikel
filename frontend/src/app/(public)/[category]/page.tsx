@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 
-import { getCategory, listArticles } from '@/lib/api/queries';
+import { getCategory, getSite, listArticles } from '@/lib/api/queries';
 import { absoluteUrl } from '@/lib/site-url';
+import { baseOpenGraph, generatedOgImage, LARGE_CARD } from '@/lib/og/meta';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Container } from '@/components/ui/Container';
 import { Pagination } from '@/components/ui/Pagination';
@@ -36,7 +37,7 @@ export async function generateMetadata({
   const { category: slug } = await params;
   const sp = await searchParams;
   const page = parsePage(firstValue(sp.page));
-  const category = await getCategory(slug);
+  const [category, site] = await Promise.all([getCategory(slug), getSite()]);
 
   const subSlug = firstValue(sp.sub);
   const activeSub = category.children.find((child) => child.slug === subSlug);
@@ -45,14 +46,27 @@ export async function generateMetadata({
   const title = page > 1 ? `${name} — Halaman ${page}` : name;
   const canonicalPath = `/${slug}${buildQuery(page, activeSub?.slug)}`;
 
+  const description =
+    category.seo_description ?? category.description ?? undefined;
+
   return {
     title: category.seo_title ?? title,
-    description: category.seo_description ?? category.description ?? undefined,
+    description,
     alternates: {
       canonical: absoluteUrl(canonicalPath),
       types: { 'application/rss+xml': absoluteUrl('/feed.xml') },
     },
-    openGraph: { type: 'website', title, url: absoluteUrl(canonicalPath) },
+    openGraph: {
+      ...baseOpenGraph(site),
+      type: 'website',
+      title,
+      description,
+      url: absoluteUrl(canonicalPath),
+      images: [
+        generatedOgImage('kategori', activeSub?.slug ?? category.slug, name),
+      ],
+    },
+    twitter: LARGE_CARD,
   };
 }
 

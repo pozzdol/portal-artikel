@@ -7,11 +7,13 @@ import { Container } from '@/components/ui/Container';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { MonthCalendar } from '@/components/ui/MonthCalendar';
 import { Pagination } from '@/components/ui/Pagination';
-import { listEvents } from '@/lib/api/queries';
+import { getSite, listEvents } from '@/lib/api/queries';
 import { dateTimeAttr, shiftMonth } from '@/lib/format';
 import { absoluteUrl } from '@/lib/site-url';
+import { baseOpenGraph, LARGE_CARD, siteOgImage } from '@/lib/og/meta';
 
 export async function generateMetadata(): Promise<Metadata> {
+  const site = await getSite();
   const canonical = absoluteUrl('/agenda');
   const description =
     'Jadwal kajian, rapat, dan acara alumni Darul Hikmah Sumedang.';
@@ -25,11 +27,14 @@ export async function generateMetadata(): Promise<Metadata> {
       types: { 'application/rss+xml': absoluteUrl('/feed.xml') },
     },
     openGraph: {
+      ...baseOpenGraph(site),
       title: 'Agenda',
       description,
       type: 'website',
       url: canonical,
+      images: [siteOgImage(site)],
     },
+    twitter: LARGE_CARD,
   };
 }
 

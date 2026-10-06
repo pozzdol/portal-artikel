@@ -6,20 +6,18 @@ import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Container } from '@/components/ui/Container';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { JsonLd } from '@/components/ui/JsonLd';
-import { getVideo } from '@/lib/api/queries';
+import { getSite, getVideo } from '@/lib/api/queries';
 import { formatCompactNumber, formatDateLong } from '@/lib/format';
 import { absoluteUrl } from '@/lib/site-url';
+import { baseOpenGraph, generatedOgImage, LARGE_CARD } from '@/lib/og/meta';
 
 export async function generateMetadata(
   props: PageProps<'/video/[slug]'>,
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const video = await getVideo(slug);
+  const [video, site] = await Promise.all([getVideo(slug), getSite()]);
   const description = video.description ?? video.title;
   const canonical = absoluteUrl(video.url);
-  const thumbnail = /^https?:\/\//i.test(video.thumbnail_url)
-    ? video.thumbnail_url
-    : absoluteUrl(video.thumbnail_url);
 
   return {
     title: video.title,
@@ -29,13 +27,16 @@ export async function generateMetadata(
       types: { 'application/rss+xml': absoluteUrl('/feed.xml') },
     },
     openGraph: {
+      ...baseOpenGraph(site),
       title: video.title,
       description,
       type: 'video.other',
       url: canonical,
-      images: [thumbnail],
+      images: [
+        generatedOgImage('video', video.slug, video.title, video.published_at),
+      ],
     },
-    twitter: { card: 'summary_large_image' },
+    twitter: LARGE_CARD,
   };
 }
 

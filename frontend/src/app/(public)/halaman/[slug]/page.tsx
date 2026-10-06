@@ -4,14 +4,15 @@ import Link from 'next/link';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Container } from '@/components/ui/Container';
 import { Prose } from '@/components/ui/Prose';
-import { getPage } from '@/lib/api/queries';
+import { getPage, getSite } from '@/lib/api/queries';
 import { absoluteUrl } from '@/lib/site-url';
+import { baseOpenGraph, generatedOgImage, LARGE_CARD } from '@/lib/og/meta';
 
 export async function generateMetadata(
   props: PageProps<'/halaman/[slug]'>,
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const page = await getPage(slug);
+  const [page, site] = await Promise.all([getPage(slug), getSite()]);
   const title = page.seo.title ?? page.title;
   const description = page.seo.description ?? undefined;
   const canonical = absoluteUrl(`/halaman/${page.slug}`);
@@ -20,7 +21,17 @@ export async function generateMetadata(
     title,
     description,
     alternates: { canonical },
-    openGraph: { title, description, type: 'website', url: canonical },
+    openGraph: {
+      ...baseOpenGraph(site),
+      title,
+      description,
+      type: 'website',
+      url: canonical,
+      images: [
+        generatedOgImage('halaman', page.slug, page.title, page.updated_at),
+      ],
+    },
+    twitter: LARGE_CARD,
   };
 }
 

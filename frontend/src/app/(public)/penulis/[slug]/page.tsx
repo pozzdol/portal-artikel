@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 
-import { getAuthor, listArticles } from '@/lib/api/queries';
+import { getAuthor, getSite, listArticles } from '@/lib/api/queries';
 import { absoluteUrl } from '@/lib/site-url';
+import { baseOpenGraph, generatedOgImage, LARGE_CARD } from '@/lib/og/meta';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Container } from '@/components/ui/Container';
 import { FixedImage } from '@/components/ui/ImageBox';
@@ -27,7 +28,9 @@ export async function generateMetadata({
   const { slug } = await params;
   const { page: pageRaw } = await searchParams;
   const page = parsePage(firstValue(pageRaw));
-  const author = await getAuthor(slug);
+  const [author, site] = await Promise.all([getAuthor(slug), getSite()]);
+  const description =
+    author.bio ?? `Artikel yang ditulis oleh ${author.display_name}.`;
 
   const title =
     page > 1 ? `${author.display_name} — Halaman ${page}` : author.display_name;
@@ -36,18 +39,20 @@ export async function generateMetadata({
 
   return {
     title,
-    description:
-      author.bio ?? `Artikel yang ditulis oleh ${author.display_name}.`,
+    description,
     alternates: {
       canonical: absoluteUrl(canonicalPath),
       types: { 'application/rss+xml': absoluteUrl('/feed.xml') },
     },
     openGraph: {
+      ...baseOpenGraph(site),
       type: 'profile',
       title,
+      description,
       url: absoluteUrl(canonicalPath),
-      ...(author.avatar ? { images: [absoluteUrl(author.avatar.url)] } : {}),
+      images: [generatedOgImage('penulis', author.slug, author.display_name)],
     },
+    twitter: LARGE_CARD,
   };
 }
 

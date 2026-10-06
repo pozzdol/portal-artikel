@@ -10,12 +10,13 @@ import { Prose } from '@/components/ui/Prose';
 import { getEvent, getSite } from '@/lib/api/queries';
 import { formatDateWeekday, formatTimeWIB } from '@/lib/format';
 import { absoluteUrl } from '@/lib/site-url';
+import { baseOpenGraph, generatedOgImage, LARGE_CARD } from '@/lib/og/meta';
 
 export async function generateMetadata(
   props: PageProps<'/agenda/[slug]'>,
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const event = await getEvent(slug);
+  const [event, site] = await Promise.all([getEvent(slug), getSite()]);
   const title = event.seo.title ?? event.title;
   const description = event.seo.description ?? event.summary ?? undefined;
   const canonical = absoluteUrl(event.url);
@@ -28,13 +29,14 @@ export async function generateMetadata(
       types: { 'application/rss+xml': absoluteUrl('/feed.xml') },
     },
     openGraph: {
+      ...baseOpenGraph(site),
       title,
       description,
       type: 'website',
       url: canonical,
-      ...(event.cover ? { images: [absoluteUrl(event.cover.url)] } : {}),
+      images: [generatedOgImage('agenda', event.slug, event.title)],
     },
-    twitter: { card: 'summary_large_image' },
+    twitter: LARGE_CARD,
   };
 }
 

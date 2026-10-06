@@ -5,8 +5,9 @@ import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Container } from '@/components/ui/Container';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Pagination } from '@/components/ui/Pagination';
-import { listAlumni } from '@/lib/api/queries';
+import { getSite, listAlumni } from '@/lib/api/queries';
 import { absoluteUrl } from '@/lib/site-url';
+import { baseOpenGraph, LARGE_CARD, siteOgImage } from '@/lib/og/meta';
 
 const DESCRIPTION =
   'Kisah dan jejak alumni Darul Hikmah Sumedang di berbagai bidang.';
@@ -23,6 +24,7 @@ function parsePage(value: string | string[] | undefined): number {
 export async function generateMetadata(
   props: PageProps<'/tokoh'>,
 ): Promise<Metadata> {
+  const site = await getSite();
   const sp = await props.searchParams;
   const page = parsePage(sp.page);
   const canonical =
@@ -37,11 +39,14 @@ export async function generateMetadata(
       types: { 'application/rss+xml': absoluteUrl('/feed.xml') },
     },
     openGraph: {
+      ...baseOpenGraph(site),
       title,
       description: DESCRIPTION,
       type: 'website',
       url: canonical,
+      images: [siteOgImage(site)],
     },
+    twitter: LARGE_CARD,
   };
 }
 

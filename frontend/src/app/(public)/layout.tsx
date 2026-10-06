@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { PublicShell } from '@/components/layout/PublicShell';
 import { getSite } from '@/lib/api/queries';
 import { absoluteUrl } from '@/lib/site-url';
+import { LARGE_CARD, siteOgImage } from '@/lib/og/meta';
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getSite();
@@ -10,7 +11,6 @@ export async function generateMetadata(): Promise<Metadata> {
   const seo = site.settings['seo.defaults'];
   const name = identity?.name ?? 'ALMAIDAH';
   const tagline = identity?.tagline ?? 'Alumni Darul Hikmah Sumedang';
-  const ogMedia = seo?.default_og_media ?? null;
   const favicon = identity?.favicon ?? null;
   const verification = seo?.google_site_verification?.trim();
 
@@ -25,19 +25,11 @@ export async function generateMetadata(): Promise<Metadata> {
       locale: 'id_ID',
       type: 'website',
       url: absoluteUrl('/'),
-      ...(ogMedia
-        ? {
-            images: [
-              {
-                url: absoluteUrl(ogMedia.url),
-                width: ogMedia.width ?? undefined,
-                height: ogMedia.height ?? undefined,
-              },
-            ],
-          }
-        : {}),
+      images: [siteOgImage(site)],
     },
-    twitter: { card: ogMedia ? 'summary_large_image' : 'summary' },
+    twitter: LARGE_CARD,
+    // Lets Google show large image previews (Discover, search).
+    robots: { 'max-image-preview': 'large' },
     ...(verification ? { verification: { google: verification } } : {}),
     // Favicon chosen in Pengaturan situs replaces the static brand icons.
     ...(favicon ? { icons: { icon: favicon.url, apple: favicon.url } } : {}),

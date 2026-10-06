@@ -6,14 +6,15 @@ import { Eyebrow } from '@/components/ui/Eyebrow';
 import { ImageBox } from '@/components/ui/ImageBox';
 import { JsonLd } from '@/components/ui/JsonLd';
 import { Prose } from '@/components/ui/Prose';
-import { getAlumni } from '@/lib/api/queries';
+import { getAlumni, getSite } from '@/lib/api/queries';
 import { absoluteUrl } from '@/lib/site-url';
+import { baseOpenGraph, generatedOgImage, LARGE_CARD } from '@/lib/og/meta';
 
 export async function generateMetadata(
   props: PageProps<'/tokoh/[slug]'>,
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const person = await getAlumni(slug);
+  const [person, site] = await Promise.all([getAlumni(slug), getSite()]);
   const title = person.seo.title ?? person.name;
   const description = person.seo.description ?? person.short_bio;
   const canonical = absoluteUrl(person.url);
@@ -26,13 +27,14 @@ export async function generateMetadata(
       types: { 'application/rss+xml': absoluteUrl('/feed.xml') },
     },
     openGraph: {
+      ...baseOpenGraph(site),
       title,
       description,
       type: 'profile',
       url: canonical,
-      ...(person.photo ? { images: [absoluteUrl(person.photo.url)] } : {}),
+      images: [generatedOgImage('tokoh', person.slug, person.name)],
     },
-    twitter: { card: 'summary_large_image' },
+    twitter: LARGE_CARD,
   };
 }
 

@@ -3,6 +3,12 @@ import { permanentRedirect } from 'next/navigation';
 
 import { getArticle, getSite } from '@/lib/api/queries';
 import { absoluteUrl } from '@/lib/site-url';
+import {
+  baseOpenGraph,
+  generatedOgImage,
+  LARGE_CARD,
+  mediaOgImage,
+} from '@/lib/og/meta';
 import { ArticleView } from '@/components/article/ArticleView';
 
 // Article detail route (docs/06 §2, §5). Fully cached ISR: only `params` is
@@ -26,10 +32,16 @@ export async function generateMetadata({
 
   const { article } = result;
   const site = await getSite();
-  const ogImage =
-    article.seo.og ??
-    article.cover ??
-    site.settings['seo.defaults']?.default_og_media;
+  // An OG image picked by the editor wins; otherwise the branded card, which
+  // already shows the cover photo.
+  const ogImage = article.seo.og
+    ? mediaOgImage(article.seo.og, article.title)
+    : generatedOgImage(
+        'artikel',
+        article.slug,
+        article.title,
+        article.updated_at,
+      );
 
   return {
     title: article.seo.title,
@@ -39,6 +51,7 @@ export async function generateMetadata({
       types: { 'application/rss+xml': absoluteUrl('/feed.xml') },
     },
     openGraph: {
+      ...baseOpenGraph(site),
       type: 'article',
       title: article.seo.title,
       description: article.seo.description ?? undefined,
@@ -48,17 +61,9 @@ export async function generateMetadata({
       authors: [absoluteUrl(`/penulis/${article.author.slug}`)],
       section: article.category.name,
       tags: article.tags.map((tag) => tag.name),
-      images: ogImage
-        ? [
-            {
-              url: absoluteUrl(ogImage.url),
-              width: ogImage.width ?? undefined,
-              height: ogImage.height ?? undefined,
-            },
-          ]
-        : undefined,
+      images: [ogImage],
     },
-    twitter: { card: 'summary_large_image' },
+    twitter: LARGE_CARD,
   };
 }
 
