@@ -90,7 +90,7 @@ export function AdminSidebar({ brand }: { brand: AdminBrandProps }) {
         </Link>
       </SidebarHeader>
 
-      <SidebarContent className="[scrollbar-width:thin] gap-0 overflow-y-auto py-2 pb-2">
+      <SidebarContent className="gap-0 overflow-y-auto py-2 pb-2">
         {groups.map((group, i) => (
           <SidebarGroup key={group.label ?? `g${i}`} className="py-1">
             {group.label ? (

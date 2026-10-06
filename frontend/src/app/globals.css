@@ -649,3 +649,81 @@
   }
 }
 /* /editor */
+
+/* Scrollbars: thin, transparent track, no arrow buttons; thumb follows the
+   ink token so it adapts to light/dark. WebKit/Blink use the pseudo-elements;
+   the standard properties are only applied where those are unsupported
+   (Firefox), because setting them in Chromium disables the ::-webkit rules. */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background: transparent;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--ink) 35%, transparent);
+}
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--ink) 22%, transparent) transparent;
+  }
+}
+
+/* Pointer cursor for everything clickable. Tailwind v4 resets buttons to
+   cursor:default; this lives in the base layer so explicit utilities
+   (cursor-grab, cursor-not-allowed, …) still win. */
+@layer base {
+  button,
+  [role='button'],
+  [role='tab'],
+  [role='switch'],
+  [role='checkbox'],
+  [role='radio'],
+  [role='option'],
+  [role='menuitem'],
+  [role='menuitemcheckbox'],
+  [role='menuitemradio'],
+  [role='combobox'],
+  summary,
+  select,
+  label[for],
+  input[type='checkbox'],
+  input[type='radio'],
+  input[type='file'],
+  input[type='submit'],
+  input[type='button'],
+  input[type='reset'] {
+    cursor: pointer;
+  }
+  :disabled,
+  [aria-disabled='true'],
+  [data-disabled] {
+    cursor: not-allowed;
+  }
+}
+
+/* shadcn menu/list items ship a cursor-default utility; override it for
+   enabled items only (unlayered, so it beats the utility layer). */
+:is(
+  [data-slot='dropdown-menu-item'],
+  [data-slot='dropdown-menu-checkbox-item'],
+  [data-slot='dropdown-menu-radio-item'],
+  [data-slot='dropdown-menu-sub-trigger'],
+  [data-slot='select-item'],
+  [data-slot='command-item']
+):not([data-disabled], [aria-disabled='true']) {
+  cursor: pointer;
+}
