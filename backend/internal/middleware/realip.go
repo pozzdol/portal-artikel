@@ -1,10 +1,18 @@
 package middleware
 
 import (
+	"crypto/subtle"
 	"net"
 	"net/http"
 	"net/netip"
 	"strings"
+)
+
+// Headers a frontend on another host uses to hand over the visitor's IP.
+// X-Client-IP is believed only when X-Proxy-Secret matches the shared secret.
+const (
+	ProxySecretHeader = "X-Proxy-Secret"
+	ClientIPHeader    = "X-Client-IP"
 )
 
 // DefaultTrustedProxies is loopback only: Next.js and the Go API run on the
@@ -26,7 +34,13 @@ var DefaultTrustedProxies = []netip.Prefix{
 //
 // An empty trusted list trusts nobody. A RemoteAddr that cannot be parsed is
 // left unchanged.
-func RealIP(trusted []netip.Prefix) func(http.Handler) http.Handler {
+//
+// Split hosting (frontend and API on different hosts): when proxySecret is
+// non-empty and the request carries a matching X-Proxy-Secret, a valid
+// X-Client-IP wins regardless of the peer, because the peer is then the
+// frontend platform (or a tunnel), not the visitor. Both headers are removed
+// before the request reaches the handlers.
+func RealIP(trusted []netip.Prefix, proxySecret string) func(http.Handler) http.Handler {
 	isTrusted := func(a netip.Addr) bool {
 		for _, p := range trusted {
 			if p.Contains(a) {
@@ -37,12 +51,29 @@ func RealIP(trusted []netip.Prefix) func(http.Handler) http.Handler {
 	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if peer, ok := parseHostIP(r.RemoteAddr); ok {
+			if a, ok := proxiedClient(r, proxySecret); ok {
+				r.RemoteAddr = a.String()
+			} else if peer, ok := parseHostIP(r.RemoteAddr); ok {
 				r.RemoteAddr = clientAddr(r, peer, isTrusted).String()
 			}
+			r.Header.Del(ProxySecretHeader)
+			r.Header.Del(ClientIPHeader)
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// proxiedClient returns X-Client-IP when proxySecret is set and X-Proxy-Secret
+// matches it (constant time).
+func proxiedClient(r *http.Request, proxySecret string) (netip.Addr, bool) {
+	if proxySecret == "" {
+		return netip.Addr{}, false
+	}
+	got := r.Header.Get(ProxySecretHeader)
+	if subtle.ConstantTimeCompare([]byte(got), []byte(proxySecret)) != 1 {
+		return netip.Addr{}, false
+	}
+	return parseHostIP(r.Header.Get(ClientIPHeader))
 }
 
 func clientAddr(r *http.Request, peer netip.Addr, isTrusted func(netip.Addr) bool) netip.Addr {

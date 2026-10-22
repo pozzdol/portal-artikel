@@ -116,7 +116,7 @@ func NewApp(d Deps) *App {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
-	r.Use(appmw.RealIP(trustedProxies(d.Cfg)))
+	r.Use(appmw.RealIP(trustedProxies(d.Cfg), frontendProxySecret(d.Cfg)))
 	r.Use(requestLogger(d.Log))
 	r.Use(recoverer(d.Log))
 	r.Use(middleware.Timeout(requestTimeout))
@@ -291,6 +291,14 @@ func trustedProxies(cfg *config.Config) []netip.Prefix {
 		return appmw.DefaultTrustedProxies
 	}
 	return cfg.TrustedProxyPrefixes()
+}
+
+// frontendProxySecret returns FRONTEND_PROXY_SECRET from cfg ("" = disabled).
+func frontendProxySecret(cfg *config.Config) string {
+	if cfg == nil {
+		return ""
+	}
+	return cfg.FrontendProxySecret
 }
 
 // authConfig returns token lifetimes from cfg, falling back to the documented

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-// Next 16 Proxy (formerly middleware). Two jobs, selected by config.matcher:
+// Next 16 Proxy (formerly middleware). Three jobs, selected by config.matcher:
 //
 // 1. Preview rewrite — only two-segment paths that carry ?preview=, so article
 //    pages stay fully cached: /{category}/{slug}?preview={token} is rewritten
@@ -12,6 +12,13 @@ import { NextResponse, type NextRequest } from 'next/server';
 //    This only checks the cookie's presence (its Max-Age is the session
 //    lifetime); Go validates the token, and the (shell) layout / AdminGate
 //    handle expired or revoked sessions.
+// 3. Client IP hand-off — /api/v1/*, only when FRONTEND_PROXY_SECRET is set
+//    (frontend and API on different hosts): the request continues to the
+//    next.config rewrite with X-Proxy-Secret and X-Client-IP, so Go rate-limits
+//    and counts views per visitor instead of per frontend server. The IP is
+//    read from CLIENT_IP_HEADER, which must be a header the hosting platform
+//    overwrites (x-real-ip: nginx/Vercel, cf-connecting-ip: Cloudflare,
+//    x-nf-client-connection-ip: Netlify). Client-sent copies are replaced.
 
 /** First segments that are not article categories (reserved slugs, 00004_taxonomy.sql). */
 const RESERVED_FIRST_SEGMENTS = new Set([
@@ -88,8 +95,23 @@ function previewRewrite(request: NextRequest): NextResponse {
   return NextResponse.rewrite(target);
 }
 
+function apiHandoff(request: NextRequest): NextResponse {
+  const secret = process.env.FRONTEND_PROXY_SECRET;
+  if (!secret) return NextResponse.next();
+
+  const headers = new Headers(request.headers);
+  headers.set('x-proxy-secret', secret);
+  const source = (process.env.CLIENT_IP_HEADER || 'x-real-ip').toLowerCase();
+  const ip = request.headers.get(source)?.split(',')[0]?.trim();
+  if (ip) headers.set('x-client-ip', ip);
+  else headers.delete('x-client-ip');
+  return NextResponse.next({ request: { headers } });
+}
+
 export function proxy(request: NextRequest) {
-  if (isAdminPath(request.nextUrl.pathname)) return adminGuard(request);
+  const { pathname } = request.nextUrl;
+  if (pathname.startsWith('/api/v1/')) return apiHandoff(request);
+  if (isAdminPath(pathname)) return adminGuard(request);
   return previewRewrite(request);
 }
 
@@ -98,5 +120,6 @@ export const config = {
     { source: '/:category/:slug', has: [{ type: 'query', key: 'preview' }] },
     '/admin',
     '/admin/:path*',
+    '/api/v1/:path*',
   ],
 };

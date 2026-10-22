@@ -53,7 +53,7 @@ func TestRealIP(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			var got string
-			h := RealIP(c.trusted)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+			h := RealIP(c.trusted, "")(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				got = r.RemoteAddr
 			}))
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -66,6 +66,57 @@ func TestRealIP(t *testing.T) {
 			}
 			h.ServeHTTP(httptest.NewRecorder(), req)
 			assert.Equal(t, c.want, got)
+		})
+	}
+}
+
+func TestRealIPProxySecret(t *testing.T) {
+	const secret = "0123456789abcdef0123456789abcdef"
+	cases := []struct {
+		name     string
+		secret   string // configured on the API
+		remote   string
+		header   string // X-Proxy-Secret sent
+		clientIP string // X-Client-IP sent
+		xff      string
+		want     string
+	}{
+		{name: "matching secret uses client ip from untrusted peer", secret: secret,
+			remote: "76.76.21.21:443", header: secret, clientIP: "203.0.113.9", want: "203.0.113.9"},
+		{name: "matching secret beats xff behind loopback tunnel", secret: secret,
+			remote: "127.0.0.1:1", header: secret, clientIP: "2001:db8::7", xff: "203.0.113.9, 76.76.21.21", want: "2001:db8::7"},
+		{name: "wrong secret ignores client ip", secret: secret,
+			remote: "198.51.100.7:1", header: "nope", clientIP: "203.0.113.9", want: "198.51.100.7"},
+		{name: "missing secret header ignores client ip", secret: secret,
+			remote: "198.51.100.7:1", clientIP: "203.0.113.9", want: "198.51.100.7"},
+		{name: "disabled secret ignores both headers", secret: "",
+			remote: "198.51.100.7:1", header: "", clientIP: "203.0.113.9", want: "198.51.100.7"},
+		{name: "matching secret with garbage client ip falls back", secret: secret,
+			remote: "127.0.0.1:1", header: secret, clientIP: "junk", xff: "203.0.113.9", want: "203.0.113.9"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var got, leakedSecret, leakedIP string
+			h := RealIP(DefaultTrustedProxies, c.secret)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+				got = r.RemoteAddr
+				leakedSecret = r.Header.Get(ProxySecretHeader)
+				leakedIP = r.Header.Get(ClientIPHeader)
+			}))
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			req.RemoteAddr = c.remote
+			if c.header != "" {
+				req.Header.Set(ProxySecretHeader, c.header)
+			}
+			if c.clientIP != "" {
+				req.Header.Set(ClientIPHeader, c.clientIP)
+			}
+			if c.xff != "" {
+				req.Header.Set("X-Forwarded-For", c.xff)
+			}
+			h.ServeHTTP(httptest.NewRecorder(), req)
+			assert.Equal(t, c.want, got)
+			assert.Empty(t, leakedSecret, "secret header must not reach handlers")
+			assert.Empty(t, leakedIP, "client ip header must not reach handlers")
 		})
 	}
 }

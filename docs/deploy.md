@@ -200,6 +200,59 @@ masuk (tanpa certbot, tanpa port publik):
   hidrasi gagal (tombol mati, form login terkirim native). Bila terpaksa,
   isi `NEXT_ALLOWED_DEV_ORIGINS` dengan hostname tunnel.
 
+### Varian: frontend dan backend di host berbeda
+
+Frontend (Next.js) dan API (Go) boleh dijalankan di dua tempat berbeda, mis.
+frontend di Vercel / Netlify / Cloudflare Workers / server A dan API di
+server B. Browser tetap hanya bicara ke domain frontend: rewrite
+`/api/v1/*` dan `/uploads/*` di `next.config.ts` meneruskan request ke
+`API_INTERNAL_URL`, sehingga cookie, CSP (`connect-src 'self'`) dan CORS tidak
+berubah.
+
+```
+Browser → frontend (domain publik)
+            ├─ halaman SSR/ISR
+            └─ /api/v1, /uploads ──rewrite──▶ API_INTERNAL_URL (https://api.example.com) → Go
+Go ──POST NEXT_REVALIDATE_URL (https://example.com/api/revalidate)──▶ frontend
+```
+
+Pengaturan:
+
+| Variabel | Berkas | Nilai |
+|---|---|---|
+| `API_INTERNAL_URL` | frontend (env platform) | URL publik API, mis. `https://api.example.com` — dipakai saat **build** (rewrites) dan runtime |
+| `NEXT_PUBLIC_SITE_URL` | frontend | URL publik frontend (build time) |
+| `REVALIDATE_SECRET` | keduanya | identik |
+| `FRONTEND_PROXY_SECRET` | keduanya | identik, ≥ 32 karakter (`openssl rand -hex 32`) |
+| `CLIENT_IP_HEADER` | frontend | header IP pengunjung yang **ditimpa** platform: `x-real-ip` (Nginx/Vercel, default), `cf-connecting-ip` (Cloudflare Workers), `x-nf-client-connection-ip` (Netlify) |
+| `PUBLIC_SITE_URL` | backend | URL publik frontend |
+| `NEXT_REVALIDATE_URL` | backend | `https://<frontend>/api/revalidate` |
+| `COOKIE_DOMAIN` | backend | tetap kosong (cookie diset lewat rewrite, jadi host-only di domain frontend) |
+| `CORS_ORIGINS` | backend | tetap kosong |
+
+**IP pengunjung.** Pada host terpisah, peer langsung Go adalah server frontend
+(atau `cloudflared` di loopback), sehingga tanpa penanganan khusus semua
+pengunjung tampak ber-IP sama — rate limit login/view/preview menjadi global.
+Karena itu `proxy.ts` menambahkan `X-Proxy-Secret` + `X-Client-IP` (diambil
+dari `CLIENT_IP_HEADER`, nilai kiriman klien selalu ditimpa) ke setiap
+`/api/v1/*`. Go mempercayai `X-Client-IP` **hanya** jika `X-Proxy-Secret`
+cocok dengan `FRONTEND_PROXY_SECRET`, tanpa peduli IP peer, lalu menghapus
+kedua header sebelum handler. Tanpa `FRONTEND_PROXY_SECRET` perilaku sama
+seperti satu host (`TRUSTED_PROXIES`). Pastikan `CLIENT_IP_HEADER` memang
+header yang diisi ulang oleh platform — header lain bisa dipalsukan klien.
+
+Catatan:
+- Request SSR/ISR dari server Next ke API (`lib/api/server.ts`) tidak membawa
+  IP pengunjung, sama seperti topologi satu host.
+- API harus bisa dijangkau frontend (domain publik atau tunnel). Endpoint
+  publiknya sama dengan yang sudah terbuka lewat rewrite.
+- Letakkan fungsi frontend di region terdekat dengan API (mis. Vercel `syd1`
+  bila API di Sydney); setiap halaman SSR dan setiap `/api/v1` melewati jalur
+  frontend → API.
+- Build frontend tetap butuh API yang sudah jalan (prerender homepage/sitemap).
+- Upload media (`UPLOAD_MAX_MB`) melewati rewrite platform frontend; periksa
+  batas ukuran body platform tersebut.
+
 ## 6. Runbook
 
 ### Update / redeploy

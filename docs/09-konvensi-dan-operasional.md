@@ -17,6 +17,7 @@
 | `COOKIE_DOMAIN` | kosong | | Kosong = host saat ini |
 | `CORS_ORIGINS` | kosong | | Hanya jika frontend diakses langsung beda origin (tidak perlu dengan rewrite) |
 | `TRUSTED_PROXIES` | `127.0.0.0/8,::1/128` | | IP/CIDR (pisah koma) peer yang header `X-Forwarded-For`/`X-Real-IP`-nya dipercaya; `none` = tidak percaya siapa pun. XFF dibaca dari kanan, entri tepercaya dilewati. Default loopback tepat bila Next.js & API satu host; reverse proxy wajib menimpa XFF (`proxy_set_header X-Forwarded-For $remote_addr;`) |
+| `FRONTEND_PROXY_SECRET` | kosong | | Hanya jika frontend di host lain: ≥ 32 karakter, identik dengan frontend. Bila `X-Proxy-Secret` cocok, `X-Client-IP` dipakai sebagai IP klien (lihat `docs/deploy.md` §5 varian host berbeda) |
 | `UPLOAD_DIR` | `./uploads` | ✅ | |
 | `UPLOAD_MAX_MB` | `5` | | |
 | `PUBLIC_SITE_URL` | `http://localhost:3000` | ✅ | Untuk URL absolut |
@@ -32,6 +33,8 @@
 | `API_INTERNAL_URL` | `http://127.0.0.1:8080` | Dipakai server Next.js dan rewrites |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | Canonical, OG, sitemap |
 | `REVALIDATE_SECRET` | sama dengan backend | Harus cocok dengan `backend/.env` untuk verifikasi webhook |
+| `FRONTEND_PROXY_SECRET` | kosong | Hanya jika API di host lain: identik dengan backend; `proxy.ts` mengirim `X-Proxy-Secret` + `X-Client-IP` ke `/api/v1/*` |
+| `CLIENT_IP_HEADER` | `x-real-ip` | Header IP pengunjung yang ditimpa platform hosting (`cf-connecting-ip` di Cloudflare, `x-nf-client-connection-ip` di Netlify) |
 | `NEXT_ALLOWED_DEV_ORIGINS` | `staging.example.com` | Opsional, hanya `next dev` lewat tunnel/domain: hostname (dipisah koma) yang boleh memuat resource dev |
 
 `.env` dan `.env.local` **tidak di-commit**. Yang di-commit hanya `.env.example` dengan placeholder.

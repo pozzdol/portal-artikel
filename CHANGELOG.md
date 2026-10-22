@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Hosting terpisah frontend/backend:** env opsional `FRONTEND_PROXY_SECRET` (backend & frontend) dan `CLIENT_IP_HEADER` (frontend). `proxy.ts` meneruskan IP pengunjung ke `/api/v1/*` lewat `X-Client-IP` + `X-Proxy-Secret`; Go mempercayainya hanya bila secret cocok, sehingga rate limit dan view tetap per pengunjung saat frontend (Vercel/Netlify/Cloudflare/server lain) dan API beda host. Panduan di `docs/deploy.md` §5.
+
 - **Login dengan nomor HP:** field login sekarang menerima email atau nomor HP (normalized format +62...).
   - New field `phone` di users table (UNIQUE, CHECK format `^8[0-9]{8,11}$`)
   - New utility `backend/internal/phone` package: `Normalize()`, `Display()`, `E164()` untuk parsing & formatting nomor HP

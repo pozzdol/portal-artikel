@@ -36,6 +36,7 @@ type Config struct {
 	CookieDomain            string        `env:"COOKIE_DOMAIN"`
 	CORSOrigins             []string      `env:"CORS_ORIGINS" envSeparator:","`
 	TrustedProxies          []string      `env:"TRUSTED_PROXIES" envSeparator:"," envDefault:"127.0.0.0/8,::1/128"`
+	FrontendProxySecret     string        `env:"FRONTEND_PROXY_SECRET"`
 	UploadDir               string        `env:"UPLOAD_DIR" envDefault:"./uploads"`
 	UploadMaxMB             int           `env:"UPLOAD_MAX_MB" envDefault:"5"`
 	PublicSiteURL           string        `env:"PUBLIC_SITE_URL" envDefault:"http://localhost:3000"`
@@ -91,6 +92,9 @@ func (c *Config) Validate() error {
 	}
 	if _, err := parseTrustedProxies(c.TrustedProxies); err != nil {
 		errs = append(errs, err)
+	}
+	if c.FrontendProxySecret != "" && len(c.FrontendProxySecret) < 32 {
+		errs = append(errs, errors.New("FRONTEND_PROXY_SECRET must be empty or at least 32 characters"))
 	}
 	if len(errs) > 0 {
 		return fmt.Errorf("config: invalid: %w", errors.Join(errs...))
